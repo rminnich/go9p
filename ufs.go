@@ -286,7 +286,7 @@ func (*Ufs) Walk(req *srvReq) {
 	}
 
 	if req.Newfid.Aux == nil {
-		req.Newfid.Aux = new(srvFid)
+		req.Newfid.Aux = new(ufsFid)
 	}
 
 	nfid := req.Newfid.Aux.(*ufsFid)
