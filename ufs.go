@@ -29,10 +29,6 @@ type Ufs struct {
 	Srv
 }
 
-var addr = flag.String("addr", ":5640", "network address")
-var debug = flag.Int("d", 0, "print debug messages")
-var root = flag.String("root", "/", "root filesystem")
-
 func toError(err error) *Error {
 	var ecode uint32
 
