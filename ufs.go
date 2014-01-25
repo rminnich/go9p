@@ -157,7 +157,11 @@ type ufsDir struct {
 	Dir
 }
 
-func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) *Dir {
+func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) (*Dir, error) {
+	if r := recover(); r != nil {
+		fmt.Print("stat failed: ", r)
+		return nil, &os.PathError{"dir2Dir", path, nil}
+	}
 	sysMode := d.Sys().(*syscall.Stat_t)
 
 	dir := new(ufsDir)
@@ -170,7 +174,7 @@ func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) *Dir {
 
 	if dotu {
 		dir.dotu(path, d, upool, sysMode)
-		return &dir.Dir
+		return &dir.Dir, nil
 	}
 
 	unixUid := int(sysMode.Uid)
@@ -190,7 +194,7 @@ func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) *Dir {
 		dir.Gid = g.Username
 	}
 
-	return &dir.Dir
+	return &dir.Dir,nil
 }
 
 func (dir *ufsDir) dotu(path string, d os.FileInfo, upool Users, sysMode *syscall.Stat_t) {
@@ -444,7 +448,10 @@ func (*Ufs) Read(req *srvReq) {
 			var i int
 			for i = 0; i < len(fid.dirs); i++ {
 				path := fid.path + "/" + fid.dirs[i].Name()
-				st := dir2Dir(path, fid.dirs[i], req.Conn.Dotu, req.Conn.Srv.Upool)
+				st,_ := dir2Dir(path, fid.dirs[i], req.Conn.Dotu, req.Conn.Srv.Upool)
+				if st == nil {
+					continue
+				}
 				sz := PackDir(st, b, req.Conn.Dotu)
 				if sz == 0 {
 					break
@@ -518,7 +525,12 @@ func (*Ufs) Stat(req *srvReq) {
 		return
 	}
 
-	st := dir2Dir(fid.path, fid.st, req.Conn.Dotu, req.Conn.Srv.Upool)
+	st, derr := dir2Dir(fid.path, fid.st, req.Conn.Dotu, req.Conn.Srv.Upool)
+	if st == nil {
+		req.RespondError(derr)
+		return
+	}
+
 	req.RespondRstat(st)
 }
 
