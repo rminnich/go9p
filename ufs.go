@@ -162,7 +162,11 @@ func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) (*Dir, error) {
 		fmt.Print("stat failed: ", r)
 		return nil, &os.PathError{"dir2Dir", path, nil}
 	}
-	sysMode := d.Sys().(*syscall.Stat_t)
+	sysif := d.Sys()
+	if sysif == nil {
+		return nil, &os.PathError{"dir2Dir: sysif is nil", path, nil}
+	}
+	sysMode := sysif.(*syscall.Stat_t)
 
 	dir := new(ufsDir)
 	dir.Qid = *dir2Qid(d)
