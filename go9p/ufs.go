@@ -161,13 +161,13 @@ type ufsDir struct {
 	Dir
 }
 
-func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) *ufsDir {
+func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) *Dir {
 	sysMode := d.Sys().(*syscall.Stat_t)
 
 	dir := new(ufsDir)
 	dir.Qid = *dir2Qid(d)
 	dir.Mode = dir2Npmode(d, dotu)
-	dir.Atime = uint32(atime(sysMode).Unix())
+	dir.Atime = uint32(0/*atime(sysMode).Unix()*/)
 	dir.Mtime = uint32(d.ModTime().Unix())
 	dir.Length = uint64(d.Size())
 	dir.Name = path[strings.LastIndex(path, "/")+1:]
@@ -293,7 +293,7 @@ func (*Ufs) Walk(req *srvReq) {
 		req.Newfid.Aux = new(srvFid)
 	}
 
-	nfid := req.Newfid.Aux.(*Fid)
+	nfid := req.Newfid.Aux.(*ufsFid)
 	wqids := make([]Qid, len(tc.Wname))
 	path := fid.path
 	i := 0
@@ -318,7 +318,7 @@ func (*Ufs) Walk(req *srvReq) {
 }
 
 func (*Ufs) Open(req *srvReq) {
-	fid := req.Fid.Aux.(*Fid)
+	fid := req.Fid.Aux.(*ufsFid)
 	tc := req.Tc
 	err := fid.stat()
 	if err != nil {
@@ -337,7 +337,7 @@ func (*Ufs) Open(req *srvReq) {
 }
 
 func (*Ufs) Create(req *srvReq) {
-	fid := req.Fid.Aux.(*srvFid)
+	fid := req.Fid.Aux.(*ufsFid)
 	tc := req.Tc
 	err := fid.stat()
 	if err != nil {
@@ -367,7 +367,7 @@ func (*Ufs) Create(req *srvReq) {
 			return
 		}
 
-		e = os.Link(ofid.Aux.(*Fid).path, path)
+		e = os.Link(ofid.Aux.(*ufsFid).path, path)
 		ofid.DecRef()
 
 	case tc.Perm&DMNAMEDPIPE != 0:
@@ -409,7 +409,7 @@ func (*Ufs) Create(req *srvReq) {
 }
 
 func (*Ufs) Read(req *srvReq) {
-	fid := req.Fid.Aux.(*Fid)
+	fid := req.Fid.Aux.(*ufsFid)
 	tc := req.Tc
 	rc := req.Rc
 	err := fid.stat()
@@ -418,7 +418,7 @@ func (*Ufs) Read(req *srvReq) {
 		return
 	}
 
-	p.InitRread(rc, tc.Count)
+	InitRread(rc, tc.Count)
 	var count int
 	var e error
 	if fid.st.IsDir() {
@@ -478,7 +478,7 @@ func (*Ufs) Read(req *srvReq) {
 }
 
 func (*Ufs) Write(req *srvReq) {
-	fid := req.Fid.Aux.(*Fid)
+	fid := req.Fid.Aux.(*ufsFid)
 	tc := req.Tc
 	err := fid.stat()
 	if err != nil {
@@ -498,7 +498,7 @@ func (*Ufs) Write(req *srvReq) {
 func (*Ufs) Clunk(req *srvReq) { req.RespondRclunk() }
 
 func (*Ufs) Remove(req *srvReq) {
-	fid := req.Fid.Aux.(*Fid)
+	fid := req.Fid.Aux.(*ufsFid)
 	err := fid.stat()
 	if err != nil {
 		req.RespondError(err)
@@ -515,7 +515,7 @@ func (*Ufs) Remove(req *srvReq) {
 }
 
 func (*Ufs) Stat(req *srvReq) {
-	fid := req.Fid.Aux.(*Fid)
+	fid := req.Fid.Aux.(*ufsFid)
 	err := fid.stat()
 	if err != nil {
 		req.RespondError(err)
@@ -546,7 +546,7 @@ func lookup(uid string, group bool) (uint32, *Error) {
 }
 
 func (*Ufs) Wstat(req *srvReq) {
-	fid := req.Fid.Aux.(*Fid)
+	fid := req.Fid.Aux.(*ufsFid)
 	err := fid.stat()
 	if err != nil {
 		req.RespondError(err)
@@ -595,7 +595,7 @@ func (*Ufs) Wstat(req *srvReq) {
 		}
 	}
 
-	if uid != NOUID || gid != p.NOUID {
+	if uid != NOUID || gid != NOUID {
 		e := os.Chown(fid.path, int(uid), int(gid))
 		if e != nil {
 			req.RespondError(toError(e))
@@ -635,7 +635,7 @@ func (*Ufs) Wstat(req *srvReq) {
 			case true:
 				mt = st.ModTime()
 			default:
-				at = atime(st.Sys().(*syscall.Stat_t))
+				//at = time.Time(0)//atime(st.Sys().(*syscall.Stat_t))
 			}
 		}
 		e := os.Chtimes(fid.path, at, mt)
@@ -648,6 +648,7 @@ func (*Ufs) Wstat(req *srvReq) {
 	req.RespondRwstat()
 }
 
+/*
 func main() {
 	flag.Parse()
 	ufs := new(Ufs)
@@ -656,10 +657,11 @@ func main() {
 	ufs.Debuglevel = *debug
 	ufs.Start(ufs)
 
-	// determined by build tags
+	/ / determined by build tags
 	extraFuncs()
 	err := ufs.StartNetListener("tcp", *addr)
 	if err != nil {
 		log.Println(err)
 	}
 }
+*/
