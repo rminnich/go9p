@@ -5,7 +5,6 @@
 package go9p
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -27,6 +26,7 @@ type ufsFid struct {
 
 type Ufs struct {
 	Srv
+	Root string
 }
 
 func toError(err error) *Error {
@@ -248,7 +248,7 @@ func (*Ufs) FidDestroy(sfid *srvFid) {
 	}
 }
 
-func (*Ufs) Attach(req *srvReq) {
+func (ufs*Ufs) Attach(req *srvReq) {
 	if req.Afid != nil {
 		req.RespondError(Enoauth)
 		return
@@ -257,7 +257,7 @@ func (*Ufs) Attach(req *srvReq) {
 	tc := req.Tc
 	fid := new(ufsFid)
 	if len(tc.Aname) == 0 {
-		fid.path = *root
+		fid.path = ufs.Root
 	} else {
 		fid.path = tc.Aname
 	}
