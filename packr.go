@@ -4,6 +4,7 @@
 
 package go9p
 
+import "fmt"
 // Create a Rversion message in the specified Fcall.
 func PackRversion(fc *Fcall, msize uint32, version string) error {
 	size := 4 + 2 + len(version) /* msize[4] version[s] */
@@ -34,9 +35,17 @@ func PackRauth(fc *Fcall, aqid *Qid) error {
 }
 
 // Create a Rerror message in the specified Fcall. If dotu is true,
-// the function will create a 9P2000.u message. If false, nerror is
+// the function will create a 9P2000.u message. If false, errornum is
 // ignored.
+// The Akaros global is hurl-inducing but this whole blob of code
+// needs a redo. dotu is even worse, since it bakes in ONE PARTICULAR
+// EXTENSION ... 
+
 func PackRerror(fc *Fcall, error string, errornum uint32, dotu bool) error {
+	if (*Akaros) {
+		error = fmt.Sprintf("%04X %v", errornum, error)
+	}
+
 	size := 2 + len(error) /* ename[s] */
 	if dotu {
 		size += 4 /* ecode[4] */

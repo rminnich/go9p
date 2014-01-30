@@ -5,6 +5,7 @@
 package go9p
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -660,20 +661,7 @@ func (*Ufs) Wstat(req *srvReq) {
 	req.RespondRwstat()
 }
 
-/*
-func main() {
-	flag.Parse()
-	ufs := new(Ufs)
-	ufs.Dotu = true
-	ufs.Id = "ufs"
-	ufs.Debuglevel = *debug
-	ufs.Start(ufs)
-
-	/ / determined by build tags
-	extraFuncs()
-	err := ufs.StartNetListener("tcp", *addr)
-	if err != nil {
-		log.Println(err)
-	}
-}
-*/
+/* enables "Akaros" capabilities, which right now means
+ * a sane error message format.
+ */
+var Akaros = flag.Bool("akaros", false, "Akaros extensions")
