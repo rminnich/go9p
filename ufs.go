@@ -186,7 +186,6 @@ func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) (*Dir, error) {
 	unixGid := int(sysMode.Gid)
 	dir.Uid = strconv.Itoa(unixUid)
 	dir.Gid = strconv.Itoa(unixGid)
-	dir.Muid = "none"
 
 	// BUG(akumar): LookupId will never find names for
 	// groups, as it only operates on user ids.
@@ -199,6 +198,13 @@ func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) (*Dir, error) {
 		dir.Gid = g.Username
 	}
 
+	/* For Akaros, we use the Muid as the link value. */
+	if *Akaros && (d.Mode()&os.ModeSymlink != 0) {
+		dir.Muid, err = os.Readlink(path)
+		if err == nil {
+			dir.Mode |= DMSYMLINK
+		}
+	}
 	return &dir.Dir,nil
 }
 
