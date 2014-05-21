@@ -44,7 +44,7 @@ const (
 )
 
 const (
-	MSIZE   = 8192 + IOHDRSZ // default message size (8192+IOHdrSz)
+	MSIZE   = 10484576 + IOHDRSZ // default message size (8192+IOHdrSz)
 	IOHDRSZ = 24             // the non-data size of the Twrite messages
 	PORT    = 564            // default port for 9P file servers
 )
