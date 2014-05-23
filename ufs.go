@@ -250,7 +250,7 @@ func (*Ufs) ConnClosed(conn *Conn) {
 	}
 }
 
-func (*Ufs) FidDestroy(sfid *srvFid) {
+func (*Ufs) FidDestroy(sfid *SrvFid) {
 	var fid *ufsFid
 
 	if sfid.Aux == nil {
@@ -263,7 +263,7 @@ func (*Ufs) FidDestroy(sfid *srvFid) {
 	}
 }
 
-func (ufs*Ufs) Attach(req *srvReq) {
+func (ufs*Ufs) Attach(req *SrvReq) {
 	if req.Afid != nil {
 		req.RespondError(Enoauth)
 		return
@@ -288,9 +288,9 @@ func (ufs*Ufs) Attach(req *srvReq) {
 	req.RespondRattach(qid)
 }
 
-func (*Ufs) Flush(req *srvReq) {}
+func (*Ufs) Flush(req *SrvReq) {}
 
-func (*Ufs) Walk(req *srvReq) {
+func (*Ufs) Walk(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
 	tc := req.Tc
 
@@ -328,7 +328,7 @@ func (*Ufs) Walk(req *srvReq) {
 	req.RespondRwalk(wqids[0:i])
 }
 
-func (*Ufs) Open(req *srvReq) {
+func (*Ufs) Open(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
 	tc := req.Tc
 	err := fid.stat()
@@ -347,7 +347,7 @@ func (*Ufs) Open(req *srvReq) {
 	req.RespondRopen(dir2Qid(fid.st), 0)
 }
 
-func (*Ufs) Create(req *srvReq) {
+func (*Ufs) Create(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
 	tc := req.Tc
 	err := fid.stat()
@@ -419,7 +419,7 @@ func (*Ufs) Create(req *srvReq) {
 	req.RespondRcreate(dir2Qid(fid.st), 0)
 }
 
-func (*Ufs) Read(req *srvReq) {
+func (*Ufs) Read(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
 	tc := req.Tc
 	rc := req.Rc
@@ -491,7 +491,7 @@ func (*Ufs) Read(req *srvReq) {
 	req.Respond()
 }
 
-func (*Ufs) Write(req *srvReq) {
+func (*Ufs) Write(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
 	tc := req.Tc
 	err := fid.stat()
@@ -509,9 +509,9 @@ func (*Ufs) Write(req *srvReq) {
 	req.RespondRwrite(uint32(n))
 }
 
-func (*Ufs) Clunk(req *srvReq) { req.RespondRclunk() }
+func (*Ufs) Clunk(req *SrvReq) { req.RespondRclunk() }
 
-func (*Ufs) Remove(req *srvReq) {
+func (*Ufs) Remove(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
 	err := fid.stat()
 	if err != nil {
@@ -528,7 +528,7 @@ func (*Ufs) Remove(req *srvReq) {
 	req.RespondRremove()
 }
 
-func (*Ufs) Stat(req *srvReq) {
+func (*Ufs) Stat(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
 	err := fid.stat()
 	if err != nil {
@@ -564,7 +564,7 @@ func lookup(uid string, group bool) (uint32, *Error) {
 	return uint32(u), nil
 }
 
-func (*Ufs) Wstat(req *srvReq) {
+func (*Ufs) Wstat(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
 	err := fid.stat()
 	if err != nil {

@@ -17,9 +17,9 @@ func (srv *Srv) NewConn(c net.Conn) {
 	conn.Dotu = srv.Dotu
 	conn.Debuglevel = srv.Debuglevel
 	conn.conn = c
-	conn.fidpool = make(map[uint32]*srvFid)
-	conn.reqs = make(map[uint16]*srvReq)
-	conn.reqout = make(chan *srvReq, srv.Maxpend)
+	conn.fidpool = make(map[uint32]*SrvFid)
+	conn.reqs = make(map[uint16]*SrvReq)
+	conn.reqout = make(chan *SrvReq, srv.Maxpend)
 	conn.done = make(chan bool)
 	conn.rchan = make(chan *Fcall, 64)
 
@@ -57,7 +57,7 @@ func (conn *Conn) close() {
 	}
 
 	/* call FidDestroy for all remaining fids */
-	if op, ok := (conn.Srv.ops).(srvFidOps); ok {
+	if op, ok := (conn.Srv.ops).(SrvFidOps); ok {
 		for _, fid := range conn.fidpool {
 			op.FidDestroy(fid)
 		}
@@ -112,7 +112,7 @@ func (conn *Conn) recv() {
 			}
 
 			tag := fc.Tag
-			req := new(srvReq)
+			req := new(SrvReq)
 			select {
 			case req.Rc = <-conn.rchan:
 				break

@@ -92,7 +92,7 @@ type srvFile struct {
 
 type FFid struct {
 	F    *srvFile
-	Fid  *srvFid
+	Fid  *SrvFid
 	dirs []*srvFile // used for readdir
 }
 
@@ -284,7 +284,7 @@ func (f *srvFile) CheckPerm(user User, perm uint32) bool {
 	return false
 }
 
-func (s *Fsrv) Attach(req *srvReq) {
+func (s *Fsrv) Attach(req *SrvReq) {
 	fid := new(FFid)
 	fid.F = s.Root
 	fid.Fid = req.Fid
@@ -292,7 +292,7 @@ func (s *Fsrv) Attach(req *srvReq) {
 	req.RespondRattach(&s.Root.Qid)
 }
 
-func (*Fsrv) Walk(req *srvReq) {
+func (*Fsrv) Walk(req *SrvReq) {
 	fid := req.Fid.Aux.(*FFid)
 	tc := req.Tc
 
@@ -356,7 +356,7 @@ func mode2Perm(mode uint8) uint32 {
 	return perm
 }
 
-func (*Fsrv) Open(req *srvReq) {
+func (*Fsrv) Open(req *SrvReq) {
 	fid := req.Fid.Aux.(*FFid)
 	tc := req.Tc
 
@@ -375,7 +375,7 @@ func (*Fsrv) Open(req *srvReq) {
 	req.RespondRopen(&fid.F.Qid, 0)
 }
 
-func (*Fsrv) Create(req *srvReq) {
+func (*Fsrv) Create(req *SrvReq) {
 	fid := req.Fid.Aux.(*FFid)
 	tc := req.Tc
 
@@ -398,7 +398,7 @@ func (*Fsrv) Create(req *srvReq) {
 	}
 }
 
-func (*Fsrv) Read(req *srvReq) {
+func (*Fsrv) Read(req *SrvReq) {
 	var i, n int
 	var err error
 
@@ -462,7 +462,7 @@ func (*Fsrv) Read(req *srvReq) {
 	req.Respond()
 }
 
-func (*Fsrv) Write(req *srvReq) {
+func (*Fsrv) Write(req *SrvReq) {
 	fid := req.Fid.Aux.(*FFid)
 	f := fid.F
 	tc := req.Tc
@@ -480,7 +480,7 @@ func (*Fsrv) Write(req *srvReq) {
 
 }
 
-func (*Fsrv) Clunk(req *srvReq) {
+func (*Fsrv) Clunk(req *SrvReq) {
 	fid := req.Fid.Aux.(*FFid)
 
 	if op, ok := (fid.F.ops).(FClunkOp); ok {
@@ -492,7 +492,7 @@ func (*Fsrv) Clunk(req *srvReq) {
 	req.RespondRclunk()
 }
 
-func (*Fsrv) Remove(req *srvReq) {
+func (*Fsrv) Remove(req *SrvReq) {
 	fid := req.Fid.Aux.(*FFid)
 	f := fid.F
 	f.Lock()
@@ -517,7 +517,7 @@ func (*Fsrv) Remove(req *srvReq) {
 	}
 }
 
-func (*Fsrv) Stat(req *srvReq) {
+func (*Fsrv) Stat(req *SrvReq) {
 	fid := req.Fid.Aux.(*FFid)
 	f := fid.F
 
@@ -533,7 +533,7 @@ func (*Fsrv) Stat(req *srvReq) {
 	}
 }
 
-func (*Fsrv) Wstat(req *srvReq) {
+func (*Fsrv) Wstat(req *SrvReq) {
 	tc := req.Tc
 	fid := req.Fid.Aux.(*FFid)
 	f := fid.F
@@ -550,7 +550,7 @@ func (*Fsrv) Wstat(req *srvReq) {
 	}
 }
 
-func (*Fsrv) FidDestroy(ffid *srvFid) {
+func (*Fsrv) FidDestroy(ffid *SrvFid) {
 	if ffid.Aux == nil {
 		return
 	}

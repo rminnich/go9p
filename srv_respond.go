@@ -6,23 +6,23 @@ package go9p
 
 import "fmt"
 
-// srvRequest operations. This interface should be implemented by all file servers.
+// SrvRequest operations. This interface should be implemented by all file servers.
 // The operations correspond directly to most of the 9P2000 message types.
-type srvReqOps interface {
-	Attach(*srvReq)
-	Walk(*srvReq)
-	Open(*srvReq)
-	Create(*srvReq)
-	Read(*srvReq)
-	Write(*srvReq)
-	Clunk(*srvReq)
-	Remove(*srvReq)
-	Stat(*srvReq)
-	Wstat(*srvReq)
+type SrvReqOps interface {
+	Attach(*SrvReq)
+	Walk(*SrvReq)
+	Open(*SrvReq)
+	Create(*SrvReq)
+	Read(*SrvReq)
+	Write(*SrvReq)
+	Clunk(*SrvReq)
+	Remove(*SrvReq)
+	Stat(*SrvReq)
+	Wstat(*SrvReq)
 }
 
 // Respond to the request with Rerror message
-func (req *srvReq) RespondError(err interface{}) {
+func (req *SrvReq) RespondError(err interface{}) {
 	switch e := err.(type) {
 	case *Error:
 		PackRerror(req.Rc, e.Error(), uint32(e.Errornum), req.Conn.Dotu)
@@ -36,7 +36,7 @@ func (req *srvReq) RespondError(err interface{}) {
 }
 
 // Respond to the request with Rversion message
-func (req *srvReq) RespondRversion(msize uint32, version string) {
+func (req *SrvReq) RespondRversion(msize uint32, version string) {
 	err := PackRversion(req.Rc, msize, version)
 	if err != nil {
 		req.RespondError(err)
@@ -46,7 +46,7 @@ func (req *srvReq) RespondRversion(msize uint32, version string) {
 }
 
 // Respond to the request with Rauth message
-func (req *srvReq) RespondRauth(aqid *Qid) {
+func (req *SrvReq) RespondRauth(aqid *Qid) {
 	err := PackRauth(req.Rc, aqid)
 	if err != nil {
 		req.RespondError(err)
@@ -56,7 +56,7 @@ func (req *srvReq) RespondRauth(aqid *Qid) {
 }
 
 // Respond to the request with Rflush message
-func (req *srvReq) RespondRflush() {
+func (req *SrvReq) RespondRflush() {
 	err := PackRflush(req.Rc)
 	if err != nil {
 		req.RespondError(err)
@@ -66,7 +66,7 @@ func (req *srvReq) RespondRflush() {
 }
 
 // Respond to the request with Rattach message
-func (req *srvReq) RespondRattach(aqid *Qid) {
+func (req *SrvReq) RespondRattach(aqid *Qid) {
 	err := PackRattach(req.Rc, aqid)
 	if err != nil {
 		req.RespondError(err)
@@ -76,7 +76,7 @@ func (req *srvReq) RespondRattach(aqid *Qid) {
 }
 
 // Respond to the request with Rwalk message
-func (req *srvReq) RespondRwalk(wqids []Qid) {
+func (req *SrvReq) RespondRwalk(wqids []Qid) {
 	err := PackRwalk(req.Rc, wqids)
 	if err != nil {
 		req.RespondError(err)
@@ -86,7 +86,7 @@ func (req *srvReq) RespondRwalk(wqids []Qid) {
 }
 
 // Respond to the request with Ropen message
-func (req *srvReq) RespondRopen(qid *Qid, iounit uint32) {
+func (req *SrvReq) RespondRopen(qid *Qid, iounit uint32) {
 	err := PackRopen(req.Rc, qid, iounit)
 	if err != nil {
 		req.RespondError(err)
@@ -96,7 +96,7 @@ func (req *srvReq) RespondRopen(qid *Qid, iounit uint32) {
 }
 
 // Respond to the request with Rcreate message
-func (req *srvReq) RespondRcreate(qid *Qid, iounit uint32) {
+func (req *SrvReq) RespondRcreate(qid *Qid, iounit uint32) {
 	err := PackRcreate(req.Rc, qid, iounit)
 	if err != nil {
 		req.RespondError(err)
@@ -106,7 +106,7 @@ func (req *srvReq) RespondRcreate(qid *Qid, iounit uint32) {
 }
 
 // Respond to the request with Rread message
-func (req *srvReq) RespondRread(data []byte) {
+func (req *SrvReq) RespondRread(data []byte) {
 	err := PackRread(req.Rc, data)
 	if err != nil {
 		req.RespondError(err)
@@ -116,7 +116,7 @@ func (req *srvReq) RespondRread(data []byte) {
 }
 
 // Respond to the request with Rwrite message
-func (req *srvReq) RespondRwrite(count uint32) {
+func (req *SrvReq) RespondRwrite(count uint32) {
 	err := PackRwrite(req.Rc, count)
 	if err != nil {
 		req.RespondError(err)
@@ -126,7 +126,7 @@ func (req *srvReq) RespondRwrite(count uint32) {
 }
 
 // Respond to the request with Rclunk message
-func (req *srvReq) RespondRclunk() {
+func (req *SrvReq) RespondRclunk() {
 	err := PackRclunk(req.Rc)
 	if err != nil {
 		req.RespondError(err)
@@ -136,7 +136,7 @@ func (req *srvReq) RespondRclunk() {
 }
 
 // Respond to the request with Rremove message
-func (req *srvReq) RespondRremove() {
+func (req *SrvReq) RespondRremove() {
 	err := PackRremove(req.Rc)
 	if err != nil {
 		req.RespondError(err)
@@ -146,7 +146,7 @@ func (req *srvReq) RespondRremove() {
 }
 
 // Respond to the request with Rstat message
-func (req *srvReq) RespondRstat(st *Dir) {
+func (req *SrvReq) RespondRstat(st *Dir) {
 	err := PackRstat(req.Rc, st, req.Conn.Dotu)
 	if err != nil {
 		req.RespondError(err)
@@ -156,7 +156,7 @@ func (req *srvReq) RespondRstat(st *Dir) {
 }
 
 // Respond to the request with Rwstat message
-func (req *srvReq) RespondRwstat() {
+func (req *SrvReq) RespondRwstat() {
 	err := PackRwstat(req.Rc)
 	if err != nil {
 		req.RespondError(err)

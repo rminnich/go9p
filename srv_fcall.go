@@ -4,7 +4,7 @@
 
 package go9p
 
-func (srv *Srv) version(req *srvReq) {
+func (srv *Srv) version(req *SrvReq) {
 	tc := req.Tc
 	conn := req.Conn
 
@@ -41,7 +41,7 @@ func (srv *Srv) version(req *srvReq) {
 	req.RespondRversion(conn.Msize, ver)
 }
 
-func (srv *Srv) auth(req *srvReq) {
+func (srv *Srv) auth(req *SrvReq) {
 	tc := req.Tc
 	conn := req.Conn
 	if tc.Afid == NOFID {
@@ -83,13 +83,13 @@ func (srv *Srv) auth(req *srvReq) {
 
 }
 
-func (srv *Srv) authPost(req *srvReq) {
+func (srv *Srv) authPost(req *SrvReq) {
 	if req.Rc != nil && req.Rc.Type == Rauth {
 		req.Afid.IncRef()
 	}
 }
 
-func (srv *Srv) attach(req *srvReq) {
+func (srv *Srv) attach(req *SrvReq) {
 	tc := req.Tc
 	conn := req.Conn
 	if tc.Fid == NOFID {
@@ -131,17 +131,17 @@ func (srv *Srv) attach(req *srvReq) {
 		}
 	}
 
-	(srv.ops).(srvReqOps).Attach(req)
+	(srv.ops).(SrvReqOps).Attach(req)
 }
 
-func (srv *Srv) attachPost(req *srvReq) {
+func (srv *Srv) attachPost(req *SrvReq) {
 	if req.Rc != nil && req.Rc.Type == Rattach {
 		req.Fid.Type = req.Rc.Qid.Type
 		req.Fid.IncRef()
 	}
 }
 
-func (srv *Srv) flush(req *srvReq) {
+func (srv *Srv) flush(req *SrvReq) {
 	conn := req.Conn
 	tag := req.Tc.Oldtag
 	PackRflush(req.Rc)
@@ -176,7 +176,7 @@ func (srv *Srv) flush(req *srvReq) {
 	}
 }
 
-func (srv *Srv) walk(req *srvReq) {
+func (srv *Srv) walk(req *SrvReq) {
 	conn := req.Conn
 	tc := req.Tc
 	fid := req.Fid
@@ -207,10 +207,10 @@ func (srv *Srv) walk(req *srvReq) {
 		req.Newfid.IncRef()
 	}
 
-	(req.Conn.Srv.ops).(srvReqOps).Walk(req)
+	(req.Conn.Srv.ops).(SrvReqOps).Walk(req)
 }
 
-func (srv *Srv) walkPost(req *srvReq) {
+func (srv *Srv) walkPost(req *SrvReq) {
 	rc := req.Rc
 	if rc == nil || rc.Type != Rwalk || req.Newfid == nil {
 		return
@@ -233,7 +233,7 @@ func (srv *Srv) walkPost(req *srvReq) {
 	}
 }
 
-func (srv *Srv) open(req *srvReq) {
+func (srv *Srv) open(req *SrvReq) {
 	fid := req.Fid
 	tc := req.Tc
 	if fid.opened {
@@ -247,16 +247,16 @@ func (srv *Srv) open(req *srvReq) {
 	}
 
 	fid.Omode = tc.Mode
-	(req.Conn.Srv.ops).(srvReqOps).Open(req)
+	(req.Conn.Srv.ops).(SrvReqOps).Open(req)
 }
 
-func (srv *Srv) openPost(req *srvReq) {
+func (srv *Srv) openPost(req *SrvReq) {
 	if req.Fid != nil {
 		req.Fid.opened = req.Rc != nil && req.Rc.Type == Ropen
 	}
 }
 
-func (srv *Srv) create(req *srvReq) {
+func (srv *Srv) create(req *SrvReq) {
 	fid := req.Fid
 	tc := req.Tc
 	if fid.opened {
@@ -282,17 +282,17 @@ func (srv *Srv) create(req *srvReq) {
 	}
 
 	fid.Omode = tc.Mode
-	(req.Conn.Srv.ops).(srvReqOps).Create(req)
+	(req.Conn.Srv.ops).(SrvReqOps).Create(req)
 }
 
-func (srv *Srv) createPost(req *srvReq) {
+func (srv *Srv) createPost(req *SrvReq) {
 	if req.Rc != nil && req.Rc.Type == Rcreate && req.Fid != nil {
 		req.Fid.Type = req.Rc.Qid.Type
 		req.Fid.opened = true
 	}
 }
 
-func (srv *Srv) read(req *srvReq) {
+func (srv *Srv) read(req *SrvReq) {
 	tc := req.Tc
 	fid := req.Fid
 	if tc.Count+IOHDRSZ > req.Conn.Msize {
@@ -335,16 +335,16 @@ func (srv *Srv) read(req *srvReq) {
 		}
 	}
 
-	(req.Conn.Srv.ops).(srvReqOps).Read(req)
+	(req.Conn.Srv.ops).(SrvReqOps).Read(req)
 }
 
-func (srv *Srv) readPost(req *srvReq) {
+func (srv *Srv) readPost(req *SrvReq) {
 	if req.Rc != nil && req.Rc.Type == Rread && (req.Fid.Type&QTDIR) != 0 {
 		req.Fid.Diroffset += uint64(req.Rc.Count)
 	}
 }
 
-func (srv *Srv) write(req *srvReq) {
+func (srv *Srv) write(req *SrvReq) {
 	fid := req.Fid
 	tc := req.Tc
 	if (fid.Type & QTAUTH) != 0 {
@@ -373,10 +373,10 @@ func (srv *Srv) write(req *srvReq) {
 		return
 	}
 
-	(req.Conn.Srv.ops).(srvReqOps).Write(req)
+	(req.Conn.Srv.ops).(SrvReqOps).Write(req)
 }
 
-func (srv *Srv) clunk(req *srvReq) {
+func (srv *Srv) clunk(req *SrvReq) {
 	fid := req.Fid
 	if (fid.Type & QTAUTH) != 0 {
 		if op, ok := (req.Conn.Srv.ops).(AuthOps); ok {
@@ -389,26 +389,26 @@ func (srv *Srv) clunk(req *srvReq) {
 		return
 	}
 
-	(req.Conn.Srv.ops).(srvReqOps).Clunk(req)
+	(req.Conn.Srv.ops).(SrvReqOps).Clunk(req)
 }
 
-func (srv *Srv) clunkPost(req *srvReq) {
+func (srv *Srv) clunkPost(req *SrvReq) {
 	if req.Rc != nil && req.Rc.Type == Rclunk && req.Fid != nil {
 		req.Fid.DecRef()
 	}
 }
 
-func (srv *Srv) remove(req *srvReq) { (req.Conn.Srv.ops).(srvReqOps).Remove(req) }
+func (srv *Srv) remove(req *SrvReq) { (req.Conn.Srv.ops).(SrvReqOps).Remove(req) }
 
-func (srv *Srv) removePost(req *srvReq) {
+func (srv *Srv) removePost(req *SrvReq) {
 	if req.Rc != nil && req.Fid != nil {
 		req.Fid.DecRef()
 	}
 }
 
-func (srv *Srv) stat(req *srvReq) { (req.Conn.Srv.ops).(srvReqOps).Stat(req) }
+func (srv *Srv) stat(req *SrvReq) { (req.Conn.Srv.ops).(SrvReqOps).Stat(req) }
 
-func (srv *Srv) wstat(req *srvReq) {
+func (srv *Srv) wstat(req *SrvReq) {
 	/*
 		fid := req.Fid
 		d := &req.Tc.Dir
@@ -425,5 +425,5 @@ func (srv *Srv) wstat(req *srvReq) {
 		}
 	*/
 
-	(req.Conn.Srv.ops).(srvReqOps).Wstat(req)
+	(req.Conn.Srv.ops).(SrvReqOps).Wstat(req)
 }
