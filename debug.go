@@ -7,4 +7,3 @@ const (
 	DbgLogFcalls                  // keep the last N 9P messages (can be accessed over http)
 	DbgLogPackets                 // keep the last N 9P messages (can be accessed over http)
 )
-

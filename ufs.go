@@ -172,7 +172,7 @@ func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) (*Dir, error) {
 	dir := new(ufsDir)
 	dir.Qid = *dir2Qid(d)
 	dir.Mode = dir2Npmode(d, dotu)
-	dir.Atime = uint32(0/*atime(sysMode).Unix()*/)
+	dir.Atime = uint32(0 /*atime(sysMode).Unix()*/)
 	dir.Mtime = uint32(d.ModTime().Unix())
 	dir.Length = uint64(d.Size())
 	dir.Name = path[strings.LastIndex(path, "/")+1:]
@@ -205,7 +205,7 @@ func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) (*Dir, error) {
 			dir.Mode |= DMSYMLINK
 		}
 	}
-	return &dir.Dir,nil
+	return &dir.Dir, nil
 }
 
 func (dir *ufsDir) dotu(path string, d os.FileInfo, upool Users, sysMode *syscall.Stat_t) {
@@ -263,7 +263,7 @@ func (*Ufs) FidDestroy(sfid *SrvFid) {
 	}
 }
 
-func (ufs*Ufs) Attach(req *SrvReq) {
+func (ufs *Ufs) Attach(req *SrvReq) {
 	if req.Afid != nil {
 		req.RespondError(Enoauth)
 		return
@@ -459,7 +459,7 @@ func (*Ufs) Read(req *SrvReq) {
 			var i int
 			for i = 0; i < len(fid.dirs); i++ {
 				path := fid.path + "/" + fid.dirs[i].Name()
-				st,_ := dir2Dir(path, fid.dirs[i], req.Conn.Dotu, req.Conn.Srv.Upool)
+				st, _ := dir2Dir(path, fid.dirs[i], req.Conn.Dotu, req.Conn.Srv.Upool)
 				if st == nil {
 					continue
 				}

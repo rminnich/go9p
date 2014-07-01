@@ -115,12 +115,12 @@ type FlushOp interface {
 // that implements the file server operations.
 type Srv struct {
 	sync.Mutex
-	Id         string  // Used for debugging and stats
-	Msize      uint32  // Maximum size of the 9P2000 messages supported by the server
-	Dotu       bool    // If true, the server supports the 9P2000.u extension
-	Debuglevel int     // debug level
-	Upool      Users // Interface for finding users and groups known to the file server
-	Maxpend    int     // Maximum pending outgoing requests
+	Id         string // Used for debugging and stats
+	Msize      uint32 // Maximum size of the 9P2000 messages supported by the server
+	Dotu       bool   // If true, the server supports the 9P2000.u extension
+	Debuglevel int    // debug level
+	Upool      Users  // Interface for finding users and groups known to the file server
+	Maxpend    int    // Maximum pending outgoing requests
 	Log        *Logger
 
 	ops   interface{}     // operations
@@ -168,7 +168,8 @@ type SrvFid struct {
 	Omode     uint8       // Open mode (O* flags), if the fid is opened
 	Type      uint8       // SrvFid type (QT* flags)
 	Diroffset uint64      // If directory, the next valid read position
-	User      User      // The SrvFid's user
+	Dirents   []byte      // If directory, the serialized dirents
+	User      User        // The SrvFid's user
 	Aux       interface{} // Can be used by the file server implementation for per-SrvFid data
 }
 
@@ -179,12 +180,12 @@ type SrvFid struct {
 // should be destroyed.
 type SrvReq struct {
 	sync.Mutex
-	Tc     *Fcall // Incoming 9P2000 message
-	Rc     *Fcall // Outgoing 9P2000 response
-	Fid    *SrvFid     // The SrvFid value for all messages that contain fid[4]
-	Afid   *SrvFid     // The SrvFid value for the messages that contain afid[4] (Tauth and Tattach)
-	Newfid *SrvFid     // The SrvFid value for the messages that contain newfid[4] (Twalk)
-	Conn   *Conn    // Connection that the request belongs to
+	Tc     *Fcall  // Incoming 9P2000 message
+	Rc     *Fcall  // Outgoing 9P2000 response
+	Fid    *SrvFid // The SrvFid value for all messages that contain fid[4]
+	Afid   *SrvFid // The SrvFid value for the messages that contain afid[4] (Tauth and Tattach)
+	Newfid *SrvFid // The SrvFid value for the messages that contain newfid[4] (Twalk)
+	Conn   *Conn   // Connection that the request belongs to
 
 	status     reqStatus
 	flushreq   *SrvReq

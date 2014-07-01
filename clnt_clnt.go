@@ -46,10 +46,10 @@ type Fid struct {
 	sync.Mutex
 	Clnt   *Clnt // Client the fid belongs to
 	Iounit uint32
-	Qid         // The Qid description for the file
+	Qid           // The Qid description for the file
 	Mode   uint8  // Open mode (one of O* values) (if file is open)
 	Fid    uint32 // Fid number
-	User        // The user the fid belongs to
+	User          // The user the fid belongs to
 	walked bool   // true if the fid points to a walked file on the server
 }
 

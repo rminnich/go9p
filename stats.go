@@ -4,4 +4,3 @@ type StatsOps interface {
 	statsRegister()
 	statsUnregister()
 }
-

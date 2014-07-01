@@ -31,7 +31,7 @@ func (srv *Srv) statsRegister() {
 		http.HandleFunc("/go9p/", StatsHandler)
 		go http.ListenAndServe(":6060", nil)
 	})
-		
+
 	register("/go9p/srv/"+srv.Id, srv)
 }
 
