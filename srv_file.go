@@ -437,7 +437,7 @@ func (*Fsrv) Read(req *SrvReq) {
 		default:
 			n = len(fid.dirents[tc.Offset:])
 		}
-		rc.Data = fid.dirents[tc.Offset:n]
+		rc.Data[:] = fid.dirents[tc.Offset:n]
 	} else {
 		// file
 		if rop, ok := f.ops.(FReadOp); ok {
