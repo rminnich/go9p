@@ -201,15 +201,15 @@ func Unpack(buf []byte, dotu bool) (fc *Fcall, err error, fcsz int) {
 
 	case Rstat:
 		m, p = gint16(p)
-		p = gstat(p, &fc.Dir, dotu)
-		if p == nil {
-			goto szerror
+		p, err = gstat(p, &fc.Dir, dotu)
+		if err != nil {
+			return nil, err, 0
 		}
 
 	case Twstat:
 		fc.Fid, p = gint32(p)
 		m, p = gint16(p)
-		p = gstat(p, &fc.Dir, dotu)
+		p, _ = gstat(p, &fc.Dir, dotu)
 
 	case Rflush, Rclunk, Rremove, Rwstat:
 	}

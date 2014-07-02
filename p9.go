@@ -321,7 +321,8 @@ func gqid(buf []byte, qid *Qid) []byte {
 	return buf
 }
 
-func gstat(buf []byte, d *Dir, dotu bool) []byte {
+func gstat(buf []byte, d *Dir, dotu bool) ([]byte, error) {
+	sz := len(buf)
 	d.Size, buf = gint16(buf)
 	d.Type, buf = gint16(buf)
 	d.Dev, buf = gint32(buf)
@@ -332,27 +333,29 @@ func gstat(buf []byte, d *Dir, dotu bool) []byte {
 	d.Length, buf = gint64(buf)
 	d.Name, buf = gstr(buf)
 	if buf == nil {
-		return nil
+		s := fmt.Sprintf("Buffer too short for basic 9p: need %d, have %d",
+			49, sz)
+		return nil, &Error{s, EINVAL}
 	}
 
 	d.Uid, buf = gstr(buf)
 	if buf == nil {
-		return nil
+		return nil, &Error{"d.Uid failed", EINVAL}
 	}
 	d.Gid, buf = gstr(buf)
 	if buf == nil {
-		return nil
+		return nil, &Error{"d.Gid failed", EINVAL}
 	}
 
 	d.Muid, buf = gstr(buf)
 	if buf == nil {
-		return nil
+		return nil, &Error{"d.Muid failed", EINVAL}
 	}
 
 	if dotu {
 		d.Ext, buf = gstr(buf)
 		if buf == nil {
-			return nil
+			return nil, &Error{"d.Ext failed", EINVAL}
 		}
 
 		d.Uidnum, buf = gint32(buf)
@@ -364,7 +367,7 @@ func gstat(buf []byte, d *Dir, dotu bool) []byte {
 		d.Muidnum = NOUID
 	}
 
-	return buf
+	return buf, nil
 }
 
 func pint8(val uint8, buf []byte) []byte {
@@ -459,7 +462,7 @@ func PackDir(d *Dir, dotu bool) []byte {
 // Converts the on-the-wire representation of a stat to Stat value.
 // Returns an error if the conversion is impossible, otherwise
 // a pointer to a Stat value.
-func UnpackDir(buf []byte, dotu bool) (d *Dir, err error) {
+func UnpackDir(buf []byte, dotu bool) (d *Dir, b []byte, err error) {
 	sz := 2 + 2 + 4 + 13 + 4 + /* size[2] type[2] dev[4] qid[13] mode[4] */
 		4 + 4 + 8 + /* atime[4] mtime[4] length[8] */
 		2 + 2 + 2 + 2 /* name[s] uid[s] gid[s] muid[s] */
@@ -469,19 +472,17 @@ func UnpackDir(buf []byte, dotu bool) (d *Dir, err error) {
 	}
 
 	if len(buf) < sz {
-		goto szerror
+		s := fmt.Sprintf("short buffer: Need %d and have %v", sz, len(buf))
+		return nil, nil, &Error{s, EINVAL}
 	}
 
 	d = new(Dir)
-	buf = gstat(buf, d, dotu)
-	if buf == nil {
-		goto szerror
+	b, err = gstat(buf, d, dotu)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return d, nil
-
-szerror:
-	return nil, &Error{"short buffer", EINVAL}
+	return d, b, nil
 
 }
 

@@ -419,7 +419,7 @@ func (*Fsrv) Read(req *SrvReq) {
 			f.Lock()
 			for n, g = 0, f.cfirst; g != nil; n, g = n+1, g.next {
 			}
-log.Printf("%d entries\n", n)
+			log.Printf("%d entries\n", n)
 			fid.dirs = make([]*srvFile, n)
 			for n, g = 0, f.cfirst; g != nil; n, g = n+1, g.next {
 				fid.dirs[n] = g
@@ -428,7 +428,7 @@ log.Printf("%d entries\n", n)
 			}
 			f.Unlock()
 		}
-log.Printf("Dirents %v dirs %v \n", fid.dirents, fid.dirs)
+		log.Printf("Dirents %v dirs %v \n", fid.dirents, fid.dirs)
 
 		switch {
 		case tc.Offset > uint64(len(fid.dirents)):
@@ -438,9 +438,10 @@ log.Printf("Dirents %v dirs %v \n", fid.dirents, fid.dirs)
 		default:
 			n = len(fid.dirents[tc.Offset:])
 		}
-log.Printf("tc.Offset %v tc.Size %v n %v\n", tc.Offset, tc.Size, n)
-		rc.Data = fid.dirents[tc.Offset:n]
-log.Printf("rc.Data %v\n", rc.Data)
+		log.Printf("tc.Offset %v tc.Size %v n %v\n", tc.Offset, tc.Size, n)
+		copy(rc.Data, fid.dirents[tc.Offset:int(tc.Offset)+1+n])
+
+		log.Printf("rc.Data %v\n", rc.Data)
 	} else {
 		// file
 		if rop, ok := f.ops.(FReadOp); ok {
@@ -456,7 +457,7 @@ log.Printf("rc.Data %v\n", rc.Data)
 	}
 
 	SetRreadCount(rc, uint32(n))
-log.Printf("Read %v\n", rc)
+	log.Printf("Read %v\n", rc)
 	req.Respond()
 }
 
