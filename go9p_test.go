@@ -54,8 +54,8 @@ func TestAttachOpenReaddir(t*testing.T) {
 		t.Fatalf("%v", err)
 	}
 	t.Logf("attached, rootfid %v\n", rootfid)
-	var dirfid *Fid
-	if dirfid, err = clnt.FWalk("."); err != nil {
+	dirfid := clnt.FidAlloc()
+	if _, err = clnt.Walk(rootfid, dirfid, []string{"."}); err != nil {
 		t.Fatalf("%v", err)
 	}
 	if err = clnt.Open(dirfid, 0); err != nil {

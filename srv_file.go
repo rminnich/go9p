@@ -439,7 +439,7 @@ log.Printf("Dirents %v dirs %v \n", fid.dirents, fid.dirs)
 			n = len(fid.dirents[tc.Offset:])
 		}
 log.Printf("tc.Offset %v tc.Size %v n %v\n", tc.Offset, tc.Size, n)
-		rc.Data[:] = fid.dirents[tc.Offset:n]
+		rc.Data = fid.dirents[tc.Offset:n]
 log.Printf("rc.Data %v\n", rc.Data)
 	} else {
 		// file
