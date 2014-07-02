@@ -449,14 +449,11 @@ func pstat(d *Dir, buf []byte, dotu bool) []byte {
 
 // Converts a Dir value to its on-the-wire representation and writes it to
 // the buf. Returns the number of bytes written, 0 if there is not enough space.
-func PackDir(d *Dir, buf []byte, dotu bool) int {
+func PackDir(d *Dir, dotu bool) []byte {
 	sz := statsz(d, dotu)
-	if sz > len(buf) {
-		return 0
-	}
-
-	buf = pstat(d, buf, dotu)
-	return sz
+	buf := make([]byte, sz)
+	pstat(d, buf, dotu)
+	return buf
 }
 
 // Converts the on-the-wire representation of a stat to Stat value.

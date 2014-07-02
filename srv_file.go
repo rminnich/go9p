@@ -91,9 +91,10 @@ type srvFile struct {
 }
 
 type FFid struct {
-	F    *srvFile
-	Fid  *SrvFid
-	dirs []*srvFile // used for readdir
+	F       *srvFile
+	Fid     *SrvFid
+	dirs    []*srvFile // used for readdir
+	dirents []byte     // serialized version of dirs
 }
 
 // The Fsrv can be used to create file servers that serve
@@ -399,7 +400,7 @@ func (*Fsrv) Create(req *SrvReq) {
 }
 
 func (*Fsrv) Read(req *SrvReq) {
-	var i, n int
+	var n int
 	var err error
 
 	fid := req.Fid.Aux.(*FFid)
@@ -409,9 +410,12 @@ func (*Fsrv) Read(req *SrvReq) {
 	InitRread(rc, tc.Count)
 
 	if f.Mode&DMDIR != 0 {
-		// directory
+		// Get all the directory entries and
+		// serialize them all into an output buffer.
+		// This greatly simplifies the directory read.
 		if tc.Offset == 0 {
 			var g *srvFile
+			fid.dirents = nil
 			f.Lock()
 			for n, g = 0, f.cfirst; g != nil; n, g = n+1, g.next {
 			}
@@ -419,31 +423,21 @@ func (*Fsrv) Read(req *SrvReq) {
 			fid.dirs = make([]*srvFile, n)
 			for n, g = 0, f.cfirst; g != nil; n, g = n+1, g.next {
 				fid.dirs[n] = g
+				fid.dirents = append(fid.dirents,
+					PackDir(&g.Dir, req.Conn.Dotu)...)
 			}
 			f.Unlock()
 		}
 
-		n = 0
-		b := rc.Data
-		for i = 0; i < len(fid.dirs); i++ {
-			g := fid.dirs[i]
-			g.Lock()
-			if (g.flags & Fremoved) != 0 {
-				g.Unlock()
-				continue
-			}
-
-			sz := PackDir(&g.Dir, b, req.Conn.Dotu)
-			g.Unlock()
-			if sz == 0 {
-				break
-			}
-
-			b = b[sz:]
-			n += sz
+		switch {
+		case tc.Offset > uint64(len(fid.dirents)):
+			n = 0
+		case len(fid.dirents[tc.Offset:]) > int(tc.Size):
+			n = int(tc.Size)
+		default:
+			n = len(fid.dirents[tc.Offset:])
 		}
-
-		fid.dirs = fid.dirs[i:]
+		rc.Data = fid.dirents[tc.Offset:n]
 	} else {
 		// file
 		if rop, ok := f.ops.(FReadOp); ok {

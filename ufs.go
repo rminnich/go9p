@@ -21,6 +21,7 @@ type ufsFid struct {
 	path      string
 	file      *os.File
 	dirs      []os.FileInfo
+	dirents   []byte
 	diroffset uint64
 	st        os.FileInfo
 }
@@ -433,58 +434,50 @@ func (*Ufs) Read(req *SrvReq) {
 	var count int
 	var e error
 	if fid.st.IsDir() {
-		b := rc.Data
 		if tc.Offset == 0 {
+			var e error
+			// If we got here, it was open. Can't really seek
+			// in most cases, just close and reopen it.
 			fid.file.Close()
-			fid.file, e = os.OpenFile(fid.path, omode2uflags(req.Fid.Omode), 0)
-			if e != nil {
+			if fid.file, e = os.OpenFile(fid.path, omode2uflags(req.Fid.Omode), 0); e != nil {
 				req.RespondError(toError(e))
 				return
 			}
-		}
 
-		for len(b) > 0 {
-			if fid.dirs == nil {
-				fid.dirs, e = fid.file.Readdir(16)
-				if e != nil && e != io.EOF {
-					req.RespondError(toError(e))
-					return
-				}
-
-				if len(fid.dirs) == 0 {
-					break
-				}
+			if fid.dirs, e = fid.file.Readdir(-1); e != nil {
+				req.RespondError(toError(e))
+				return
 			}
+			fid.dirents = nil
 
-			var i int
-			for i = 0; i < len(fid.dirs); i++ {
+			for i := 0; i < len(fid.dirs); i++ {
 				path := fid.path + "/" + fid.dirs[i].Name()
 				st, _ := dir2Dir(path, fid.dirs[i], req.Conn.Dotu, req.Conn.Srv.Upool)
 				if st == nil {
 					continue
 				}
-				sz := PackDir(st, b, req.Conn.Dotu)
-				if sz == 0 {
-					break
-				}
-
-				b = b[sz:]
-				count += sz
-			}
-
-			if i < len(fid.dirs) {
-				fid.dirs = fid.dirs[i:]
-				break
-			} else {
-				fid.dirs = nil
+				b := PackDir(st, req.Conn.Dotu)
+				fid.dirents = append(fid.dirents, b...)
+				count += len(b)
 			}
 		}
+		switch {
+		case tc.Offset > uint64(len(fid.dirents)):
+			count = 0
+		case len(fid.dirents[tc.Offset:]) > int(tc.Size):
+			count = int(tc.Size)
+		default:
+			count = len(fid.dirents[tc.Offset:])
+		}
+		rc.Data = fid.dirents[tc.Offset:count]
+
 	} else {
 		count, e = fid.file.ReadAt(rc.Data, int64(tc.Offset))
 		if e != nil && e != io.EOF {
 			req.RespondError(toError(e))
 			return
 		}
+
 	}
 
 	SetRreadCount(rc, uint32(count))
