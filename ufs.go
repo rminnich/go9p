@@ -441,35 +441,48 @@ func (*Ufs) Read(req *SrvReq) {
 			fid.file.Close()
 			if fid.file, e = os.OpenFile(fid.path, omode2uflags(req.Fid.Omode), 0); e != nil {
 				req.RespondError(toError(e))
+				log.Printf("%v", e)
 				return
 			}
 
 			if fid.dirs, e = fid.file.Readdir(-1); e != nil {
 				req.RespondError(toError(e))
+				log.Printf("%v", e)
 				return
 			}
 			fid.dirents = nil
 
+log.Printf("dirs %v\n", fid.dirs)
 			for i := 0; i < len(fid.dirs); i++ {
 				path := fid.path + "/" + fid.dirs[i].Name()
 				st, _ := dir2Dir(path, fid.dirs[i], req.Conn.Dotu, req.Conn.Srv.Upool)
 				if st == nil {
 					continue
 				}
+log.Printf("Pack st %v into b\n", st)
 				b := PackDir(st, req.Conn.Dotu)
+log.Printf("b is %v\n", b)
 				fid.dirents = append(fid.dirents, b...)
 				count += len(b)
+log.Printf("Count is now %v\n", count)
 			}
 		}
+log.Printf("fid.dirents %v, \n", fid.dirents)
 		switch {
 		case tc.Offset > uint64(len(fid.dirents)):
 			count = 0
-		case len(fid.dirents[tc.Offset:]) > int(tc.Size):
-			count = int(tc.Size)
+		case len(fid.dirents[tc.Offset:]) > int(tc.Count):
+			count = int(tc.Count)
 		default:
 			count = len(fid.dirents[tc.Offset:])
 		}
-		rc.Data = fid.dirents[tc.Offset:count]
+
+log.Printf("FINAL Count is now %v\n", count)
+
+		for i := 0; i < count; i++ {
+			rc.Data[i] = fid.dirents[int(tc.Offset) + i]
+		}
+		//rc.Data[:] = fid.dirents[tc.Offset:count]
 
 	} else {
 		count, e = fid.file.ReadAt(rc.Data, int64(tc.Offset))
@@ -481,6 +494,7 @@ func (*Ufs) Read(req *SrvReq) {
 	}
 
 	SetRreadCount(rc, uint32(count))
+log.Printf("rc %v\n", rc)
 	req.Respond()
 }
 
