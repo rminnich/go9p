@@ -22,16 +22,10 @@ var testunpackbytes = []byte{
 func TestUnpackDir(t *testing.T) {
 	b := testunpackbytes
 	for len(b) > 0 {
-		var d *Dir
 		var err error
-		t.Logf("len(b) %v\n", len(b))
-		t.Logf("b %v\n", b)
-		if d, b, err = UnpackDir(b, true); err != nil {
+		if _, b, _, err = UnpackDir(b, true); err != nil {
 			t.Fatalf("Unpackdir: %v", err)
-		} else {
-			t.Logf("Unpacked: %d \n", d)
-			t.Logf("b len now %v\n", len(b))
-		}
+		} 
 	}
 }
 
@@ -85,14 +79,43 @@ func TestAttachOpenReaddir(t *testing.T) {
 	if b, err = clnt.Read(dirfid, 0, 64*1024); err != nil {
 		t.Fatalf("%v", err)
 	}
-	for len(b) > 0 {
+	for b != nil && len(b) > 0 {
 		var d *Dir
 		t.Logf("len(b) %v\n", len(b))
-		if d, b, err = UnpackDir(b, ufs.Dotu); err != nil {
+		if d, b, _, err = UnpackDir(b, ufs.Dotu); err != nil {
 			t.Fatalf("Unpackdir: %v", err)
 		} else {
 			t.Logf("Unpacked: %d \n", d)
 			t.Logf("b len now %v\n", len(b))
+		}
+	}
+	// now test partial reads.
+	// Read 128 bytes at a time. Remember the last successful offset.
+	// if UnpackDir fails, read again from that offset
+	t.Logf("NOW TRY PARTIAL")
+	offset := uint64(0)
+	for {
+		var b []byte
+		var d *Dir
+		var amt int
+		if b, err = clnt.Read(dirfid, offset, 128); err != nil {
+			t.Fatalf("%v", err)
+		}
+		if len(b) == 0 {
+			break
+		}
+		t.Logf("b %v\n", b)
+		for b != nil && len(b) > 0 {
+			t.Logf("len(b) %v\n", len(b))
+			if d, b, amt, err = UnpackDir(b, ufs.Dotu); err != nil {
+				// this error is expected ...
+				t.Logf("unpack failed (it's ok!). retry at offset %v\n", 
+					offset)
+				break
+			} else {
+				t.Logf("d %v\n", d)
+				offset += uint64(amt)
+			}
 		}
 	}
 }

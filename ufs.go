@@ -467,7 +467,7 @@ func (*Ufs) Read(req *SrvReq) {
 				log.Printf("Count is now %v\n", count)
 			}
 		}
-		log.Printf("fid.dirents %v, \n", fid.dirents)
+		//log.Printf("fid.dirents %v, \n", fid.dirents)
 		switch {
 		case tc.Offset > uint64(len(fid.dirents)):
 			count = 0
@@ -477,12 +477,8 @@ func (*Ufs) Read(req *SrvReq) {
 			count = len(fid.dirents[tc.Offset:])
 		}
 
-		log.Printf("FINAL Count is now %v\n", count)
-
-		for i := 0; i < count; i++ {
-			rc.Data[i] = fid.dirents[int(tc.Offset)+i]
-		}
-		//rc.Data[:] = fid.dirents[tc.Offset:count]
+		log.Printf("FINAL Count is now %v @ %v\n", count, tc.Offset)
+		copy(rc.Data, fid.dirents[tc.Offset:int(tc.Offset)+1+count])
 
 	} else {
 		count, e = fid.file.ReadAt(rc.Data, int64(tc.Offset))

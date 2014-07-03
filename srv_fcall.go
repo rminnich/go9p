@@ -330,8 +330,7 @@ func (srv *Srv) read(req *SrvReq) {
 		if tc.Offset == 0 {
 			fid.Diroffset = 0
 		} else if tc.Offset != fid.Diroffset {
-			req.RespondError(Ebadoffset)
-			return
+			fid.Diroffset = tc.Offset
 		}
 	}
 

@@ -99,7 +99,7 @@ func (file *File) Readdir(num int) ([]*Dir, error) {
 		}
 
 		for b := buf[0:n]; len(b) > 0; {
-			d, _, perr := UnpackDir(b, file.fid.Clnt.Dotu)
+			d, _, _, perr := UnpackDir(b, file.fid.Clnt.Dotu)
 			if perr != nil {
 				return nil, perr
 			}

@@ -4,6 +4,8 @@
 
 // The p9 package go9provides the definitions and functions used to implement
 // the 9P2000 protocol.
+// TODO.
+// All the packet conversion code in this file is crap and needs a rewrite.
 package go9p
 
 import (
@@ -301,11 +303,12 @@ func gint64(buf []byte) (uint64, []byte) {
 func gstr(buf []byte) (string, []byte) {
 	var n uint16
 
-	if buf == nil {
+	if buf == nil || len(buf) < 2 {
 		return "", nil
 	}
 
 	n, buf = gint16(buf)
+
 	if int(n) > len(buf) {
 		return "", nil
 	}
@@ -462,7 +465,7 @@ func PackDir(d *Dir, dotu bool) []byte {
 // Converts the on-the-wire representation of a stat to Stat value.
 // Returns an error if the conversion is impossible, otherwise
 // a pointer to a Stat value.
-func UnpackDir(buf []byte, dotu bool) (d *Dir, b []byte, err error) {
+func UnpackDir(buf []byte, dotu bool) (d *Dir, b []byte, amt int, err error) {
 	sz := 2 + 2 + 4 + 13 + 4 + /* size[2] type[2] dev[4] qid[13] mode[4] */
 		4 + 4 + 8 + /* atime[4] mtime[4] length[8] */
 		2 + 2 + 2 + 2 /* name[s] uid[s] gid[s] muid[s] */
@@ -473,16 +476,16 @@ func UnpackDir(buf []byte, dotu bool) (d *Dir, b []byte, err error) {
 
 	if len(buf) < sz {
 		s := fmt.Sprintf("short buffer: Need %d and have %v", sz, len(buf))
-		return nil, nil, &Error{s, EINVAL}
+		return nil, nil, 0, &Error{s, EINVAL}
 	}
 
 	d = new(Dir)
 	b, err = gstat(buf, d, dotu)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 
-	return d, b, nil
+	return d, b, len(buf)-len(b), nil
 
 }
 

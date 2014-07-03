@@ -428,7 +428,7 @@ func (*Fsrv) Read(req *SrvReq) {
 			}
 			f.Unlock()
 		}
-		log.Printf("Dirents %v dirs %v \n", fid.dirents, fid.dirs)
+		//log.Printf("Dirents %v dirs %v \n", fid.dirents, fid.dirs)
 
 		switch {
 		case tc.Offset > uint64(len(fid.dirents)):
@@ -441,7 +441,7 @@ func (*Fsrv) Read(req *SrvReq) {
 		log.Printf("tc.Offset %v tc.Size %v n %v\n", tc.Offset, tc.Size, n)
 		copy(rc.Data, fid.dirents[tc.Offset:int(tc.Offset)+1+n])
 
-		log.Printf("rc.Data %v\n", rc.Data)
+		//log.Printf("rc.Data %v\n", rc.Data)
 	} else {
 		// file
 		if rop, ok := f.ops.(FReadOp); ok {
