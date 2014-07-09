@@ -478,7 +478,7 @@ func (*Ufs) Read(req *SrvReq) {
 		}
 
 		log.Printf("FINAL Count is now %v @ %v\n", count, tc.Offset)
-		copy(rc.Data, fid.dirents[tc.Offset:int(tc.Offset)+1+count])
+		copy(rc.Data, fid.dirents[tc.Offset:int(tc.Offset)+count])
 
 	} else {
 		count, e = fid.file.ReadAt(rc.Data, int64(tc.Offset))
@@ -490,7 +490,6 @@ func (*Ufs) Read(req *SrvReq) {
 	}
 
 	SetRreadCount(rc, uint32(count))
-	log.Printf("rc %v\n", rc)
 	req.Respond()
 }
 
