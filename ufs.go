@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/user"
+	"path"
 	"strconv"
 	"strings"
 	"syscall"
@@ -558,7 +559,7 @@ func lookup(uid string, group bool) (uint32, *Error) {
 	return uint32(u), nil
 }
 
-func (*Ufs) Wstat(req *SrvReq) {
+func (u*Ufs) Wstat(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
 	err := fid.stat()
 	if err != nil {
@@ -617,20 +618,25 @@ func (*Ufs) Wstat(req *SrvReq) {
 	}
 
 	if dir.Name != "" {
+		fmt.Printf("Rename %s to %s\n", fid.path, dir.Name)
 		// if first char is / it is relative to root, else relative to
 		// cwd.
-		if dir.Name[0] == "/" {
-			path = root + dir.Name
+		var destpath string
+		if dir.Name[0] == '/' {
+			destpath = path.Join(u.Root, dir.Name)
+			fmt.Printf("/ results in %s\n", destpath)
 		} else {
-			dir, _ = path.Split(fid.path)
+			fiddir, _ := path.Split(fid.path)
+			destpath = path.Join(fiddir, dir.Name)
+			fmt.Printf("rel  results in %s\n", destpath)
 		}
-		path := fid.path[0:strings.LastIndex(fid.path, "/")+1] + "/" + dir.Name
-		err := syscall.Rename(fid.path, path)
+		err := syscall.Rename(fid.path, destpath)
+		fmt.Printf("rename %s to %s gets %v\n", fid.path, destpath, err)
 		if err != nil {
 			req.RespondError(toError(err))
 			return
 		}
-		fid.path = path
+		fid.path = destpath
 	}
 
 	if dir.Length != 0xFFFFFFFFFFFFFFFF {
