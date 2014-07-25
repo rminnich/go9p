@@ -441,33 +441,26 @@ func (*Ufs) Read(req *SrvReq) {
 			fid.file.Close()
 			if fid.file, e = os.OpenFile(fid.path, omode2uflags(req.Fid.Omode), 0); e != nil {
 				req.RespondError(toError(e))
-				log.Printf("%v", e)
 				return
 			}
 
 			if fid.dirs, e = fid.file.Readdir(-1); e != nil {
 				req.RespondError(toError(e))
-				log.Printf("%v", e)
 				return
 			}
 			fid.dirents = nil
 
-			log.Printf("dirs %v\n", fid.dirs)
 			for i := 0; i < len(fid.dirs); i++ {
 				path := fid.path + "/" + fid.dirs[i].Name()
 				st, _ := dir2Dir(path, fid.dirs[i], req.Conn.Dotu, req.Conn.Srv.Upool)
 				if st == nil {
 					continue
 				}
-				log.Printf("Pack st %v into b\n", st)
 				b := PackDir(st, req.Conn.Dotu)
-				log.Printf("b is %v\n", b)
 				fid.dirents = append(fid.dirents, b...)
 				count += len(b)
-				log.Printf("Count is now %v\n", count)
 			}
 		}
-		//log.Printf("fid.dirents %v, \n", fid.dirents)
 		switch {
 		case tc.Offset > uint64(len(fid.dirents)):
 			count = 0
@@ -477,7 +470,6 @@ func (*Ufs) Read(req *SrvReq) {
 			count = len(fid.dirents[tc.Offset:])
 		}
 
-		log.Printf("FINAL Count is now %v @ %v\n", count, tc.Offset)
 		copy(rc.Data, fid.dirents[tc.Offset:int(tc.Offset)+count])
 
 	} else {
@@ -625,6 +617,13 @@ func (*Ufs) Wstat(req *SrvReq) {
 	}
 
 	if dir.Name != "" {
+		// if first char is / it is relative to root, else relative to
+		// cwd.
+		if dir.Name[0] == "/" {
+			path = root + dir.Name
+		} else {
+			dir, _ = path.Split(fid.path)
+		}
 		path := fid.path[0:strings.LastIndex(fid.path, "/")+1] + "/" + dir.Name
 		err := syscall.Rename(fid.path, path)
 		if err != nil {
