@@ -150,7 +150,15 @@ func (conn *Conn) recv() {
 			}
 			conn.Unlock()
 			if process {
-				go req.process()
+				// Tversion may change some attributes of the
+				// connection, so we block on it. Otherwise,
+				// we may loop back to reading and that is a race.
+				// This fix brought to you by the race detector.
+				if req.Tc.Type == Tversion {
+					req.process()
+				} else {
+					go req.process()
+				}
 			}
 
 			buf = buf[fcsize:]
@@ -158,7 +166,6 @@ func (conn *Conn) recv() {
 		}
 	}
 
-	panic("unreached")
 }
 
 func (conn *Conn) send() {

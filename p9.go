@@ -523,7 +523,7 @@ func packCommon(fc *Fcall, size int, id uint8) ([]byte, error) {
 
 func (err *Error) Error() string {
 	if err != nil {
-		return fmt.Sprintf("%s: %d", err.Err, err.Errornum)
+		return err.Err
 	}
 
 	return ""
