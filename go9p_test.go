@@ -124,7 +124,8 @@ func TestAttachOpenReaddir(t *testing.T) {
 var f *File
 var b = make([]byte, 1048576/8)
 
-func TestPipefs(t *testing.T) {
+// Not sure we want this, and the test has issues. Revive it if we ever find a use for it.
+func testPipefs(t *testing.T) {
 	pipefs := new(Pipefs)
 	pipefs.Dotu = false
 	pipefs.Msize = 1048576
