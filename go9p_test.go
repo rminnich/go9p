@@ -6,8 +6,12 @@ package go9p
 
 import (
 	"flag"
+	"io/ioutil"
 	"net"
+	"os"
+	"path"
 	"testing"
+	"syscall"
 )
 
 var addr = flag.String("addr", ":5640", "network address")
@@ -125,7 +129,7 @@ var f *File
 var b = make([]byte, 1048576/8)
 
 // Not sure we want this, and the test has issues. Revive it if we ever find a use for it.
-func testPipefs(t *testing.T) {
+func TestPipefs(t *testing.T) {
 	pipefs := new(Pipefs)
 	pipefs.Dotu = false
 	pipefs.Msize = 1048576
@@ -135,6 +139,24 @@ func testPipefs(t *testing.T) {
 	pipefs.Start(pipefs)
 
 	t.Logf("pipefs starting\n");
+	d, err := ioutil.TempDir("", "TestPipeFS")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	defer func() {
+		if err := os.Remove(d); err != nil {
+			t.Fatalf("%v", err)
+		}
+	}()
+	fn := path.Join(d, "fifo")
+	if err := syscall.Mkfifo(fn, 0600); err != nil {
+		t.Fatalf("%v", err)
+	}
+	defer func() {
+		if err := os.Remove(fn); err != nil {
+			t.Fatalf("%v", err)
+		}
+	}()
 	// determined by build tags
 	//extraFuncs()
 	go func() {
@@ -144,7 +166,7 @@ func testPipefs(t *testing.T) {
 		}
 	}()
 	root := OsUsers.Uid2User(0)
-	var err error
+
 	var c *Clnt
 	for i := 0; i < 16; i++ {
 		c, err = Mount("tcp", *pipefsaddr, "/", uint32(len(b)), root)
@@ -153,7 +175,7 @@ func testPipefs(t *testing.T) {
 		t.Fatalf("Connect failed: %v\n", err)
 	}
 	t.Logf("Connected to %v\n", *c)
-	if f, err = c.FOpen("/tmp/x", ORDWR); err != nil {
+	if f, err = c.FOpen(fn, ORDWR); err != nil {
 		t.Fatalf("Open failed: %v\n", err)
 	} else {
 		for i := 0; i < 1048576/8; i++ {
