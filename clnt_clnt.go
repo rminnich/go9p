@@ -54,9 +54,10 @@ type Fid struct {
 }
 
 // The file is similar to the Fid, but is used in the high-level client
-// interface.
+// interface. We expose the Fid so that client code can use Remove
+// on a fid, the same way a kernel can.
 type File struct {
-	fid    *Fid
+	Fid    *Fid
 	offset uint64
 }
 

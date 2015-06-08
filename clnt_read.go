@@ -44,7 +44,7 @@ func (file *File) Read(buf []byte) (int, error) {
 // Reads up to len(buf) bytes from the file starting from offset.
 // Returns the number of bytes read, or an Error.
 func (file *File) ReadAt(buf []byte, offset int64) (int, error) {
-	b, err := file.fid.Clnt.Read(file.fid, uint64(offset), uint32(len(buf)))
+	b, err := file.Fid.Clnt.Read(file.Fid, uint64(offset), uint32(len(buf)))
 	if err != nil {
 		return 0, err
 	}
@@ -85,7 +85,7 @@ func (file *File) Readn(buf []byte, offset uint64) (int, error) {
 // all entries from the directory). If the operation fails, returns
 // an Error.
 func (file *File) Readdir(num int) ([]*Dir, error) {
-	buf := make([]byte, file.fid.Clnt.Msize-IOHDRSZ)
+	buf := make([]byte, file.Fid.Clnt.Msize-IOHDRSZ)
 	dirs := make([]*Dir, 32)
 	pos := 0
 	for {
@@ -99,7 +99,7 @@ func (file *File) Readdir(num int) ([]*Dir, error) {
 		}
 
 		for b := buf[0:n]; len(b) > 0; {
-			d, _, _, perr := UnpackDir(b, file.fid.Clnt.Dotu)
+			d, _, _, perr := UnpackDir(b, file.Fid.Clnt.Dotu)
 			if perr != nil {
 				return nil, perr
 			}

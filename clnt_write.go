@@ -39,7 +39,7 @@ func (file *File) Write(buf []byte) (int, error) {
 // Writes up to len(buf) bytes starting from offset. Returns the number
 // of bytes written, or an Error.
 func (file *File) WriteAt(buf []byte, offset int64) (int, error) {
-	return file.fid.Clnt.Write(file.fid, buf, uint64(offset))
+	return file.Fid.Clnt.Write(file.Fid, buf, uint64(offset))
 }
 
 // Writes exactly len(buf) bytes starting from offset. Returns the number of
