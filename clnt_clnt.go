@@ -11,6 +11,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"sync/atomic"
 )
 
 // The Clnt type represents a 9P2000 client. The client is connected to
@@ -130,13 +131,15 @@ func (clnt *Clnt) Rpc(tc *Fcall) (rc *Fcall, err error) {
 
 func (clnt *Clnt) recv() {
 	var err error
+	var buf []byte
 
 	err = nil
-	buf := make([]byte, clnt.Msize*8)
 	pos := 0
 	for {
-		if len(buf) < int(clnt.Msize) {
-			b := make([]byte, clnt.Msize*8)
+		// Connect can change the client Msize.
+		clntmsize := int(atomic.LoadUint32(&clnt.Msize))
+		if len(buf) < clntmsize {
+			b := make([]byte, clntmsize*8)
 			copy(b, buf[0:pos])
 			buf = b
 			b = nil
@@ -156,7 +159,7 @@ func (clnt *Clnt) recv() {
 			sz, _ := Gint32(buf)
 			if pos < int(sz) {
 				if len(buf) < int(sz) {
-					b := make([]byte, clnt.Msize*8)
+					b := make([]byte, atomic.LoadUint32(&clnt.Msize)*8)
 					copy(b, buf[0:pos])
 					buf = b
 					b = nil
@@ -352,8 +355,9 @@ func Connect(c net.Conn, msize uint32, dotu bool) (*Clnt, error) {
 		ver = "9P2000.u"
 	}
 
-	tc := NewFcall(clnt.Msize)
-	err := PackTversion(tc, clnt.Msize, ver)
+	clntmsize := atomic.LoadUint32(&clnt.Msize)
+	tc := NewFcall(clntmsize)
+	err := PackTversion(tc, clntmsize, ver)
 	if err != nil {
 		return nil, err
 	}
@@ -363,8 +367,8 @@ func Connect(c net.Conn, msize uint32, dotu bool) (*Clnt, error) {
 		return nil, err
 	}
 
-	if rc.Msize < clnt.Msize {
-		clnt.Msize = rc.Msize
+	if rc.Msize < atomic.LoadUint32(&clnt.Msize) {
+		atomic.StoreUint32(&clnt.Msize, rc.Msize)
 	}
 
 	clnt.Dotu = rc.Version == "9P2000.u" && clnt.Dotu
@@ -386,11 +390,11 @@ func (clnt *Clnt) NewFcall() *Fcall {
 		return tc
 	default:
 	}
-	return NewFcall(clnt.Msize)
+	return NewFcall(atomic.LoadUint32(&clnt.Msize))
 }
 
 func (clnt *Clnt) FreeFcall(fc *Fcall) {
-	if fc != nil && len(fc.Buf) >= int(clnt.Msize) {
+	if fc != nil && len(fc.Buf) >= int(atomic.LoadUint32(&clnt.Msize)) {
 		select {
 		case clnt.tchan <- fc:
 			break
