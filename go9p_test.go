@@ -6,6 +6,7 @@ package go9p
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"testing"
 	"syscall"
 )
+const numDir = 16384
 
 var addr = flag.String("addr", ":5640", "network address")
 var pipefsaddr = flag.String("pipefsaddr", ":5641", "pipefs network address")
@@ -56,7 +58,7 @@ func TestAttachOpenReaddir(t *testing.T) {
 	var conn net.Conn
 	for i := 0; i < 16; i++ {
 		if conn, err = net.Dial("tcp", *addr); err != nil {
-			t.Logf("%v", err)
+			t.Logf("Try go connect, %d'th try, %v", i, err)
 		} else {
 			t.Logf("Got a conn, %v\n", conn)
 			break
@@ -66,43 +68,85 @@ func TestAttachOpenReaddir(t *testing.T) {
 		t.Fatalf("Connect failed after many tries ...")
 	}
 
-	clnt := NewClnt(conn, 8192, false)
-	var rootfid *Fid
 	root := OsUsers.Uid2User(0)
-	if rootfid, err = clnt.Attach(nil, root, "/tmp"); err != nil {
-		t.Fatalf("%v", err)
+
+	dir, err := ioutil.TempDir("", "go9p")
+	if err != nil {
+		t.Fatalf("got %v, want nil", err)
 	}
-	t.Logf("attached, rootfid %v\n", rootfid)
+	defer os.RemoveAll(dir)
+
+	// Now create a whole bunch of files to test readdir
+	for i := 0; i < numDir; i++ {
+		f := fmt.Sprintf(path.Join(dir, fmt.Sprintf("%d", i)))
+		if err := ioutil.WriteFile(f, []byte(f), 0600); err != nil {
+			t.Fatalf("Create %v: got %v, want nil", f, err)
+		}
+	}
+
+	var clnt *Clnt
+	for i := 0; i < 16; i++ {
+		clnt, err = Mount("tcp", *addr, dir, 8192, root)
+	}
+	if err != nil {
+		t.Fatalf("Connect failed: %v\n", err)
+	}
+
+	defer clnt.Unmount()
+	t.Logf("attached, rootfid %v\n", clnt.Root)
+
 	dirfid := clnt.FidAlloc()
-	if _, err = clnt.Walk(rootfid, dirfid, []string{"."}); err != nil {
+	if _, err = clnt.Walk(clnt.Root, dirfid, []string{"."}); err != nil {
 		t.Fatalf("%v", err)
 	}
 	if err = clnt.Open(dirfid, 0); err != nil {
 		t.Fatalf("%v", err)
 	}
 	var b []byte
-	if b, err = clnt.Read(dirfid, 0, 64*1024); err != nil {
-		t.Fatalf("%v", err)
-	}
-	for b != nil && len(b) > 0 {
-		var d *Dir
-		t.Logf("len(b) %v\n", len(b))
-		if d, b, _, err = UnpackDir(b, ufs.Dotu); err != nil {
-			t.Fatalf("Unpackdir: %v", err)
-		} else {
-			t.Logf("Unpacked: %d \n", d)
-			t.Logf("b len now %v\n", len(b))
+	var i, amt int
+	var offset uint64
+	for i < numDir {
+		if b, err = clnt.Read(dirfid, offset, 64*1024); err != nil {
+			t.Fatalf("%v", err)
+		}
+		for b != nil && len(b) > 0 {
+			if _, b, amt, err = UnpackDir(b, ufs.Dotu); err != nil {
+				break
+			} else {
+				i++
+				offset += uint64(amt)
+			}
 		}
 	}
+	if i != numDir {
+		t.Fatalf("Reading %v: got %d entries, wanted %d", dir, i, numDir)
+	}
+
+	// Alternate form, using readdir and File
+	var dirfile *File
+	if dirfile, err = clnt.FOpen(".", OREAD); err != nil {
+		t.Fatalf("%v", err)
+	}
+	i, amt, offset = 0, 0, 0
+	for i < numDir {
+		if d, err := dirfile.Readdir(numDir); err != nil {
+			t.Fatalf("%v", err)
+		} else {
+			i += len(d)
+		}
+	}
+	if i != numDir {
+		t.Fatalf("Readdir %v: got %d entries, wanted %d", dir, i, numDir)
+	}
+
 	// now test partial reads.
 	// Read 128 bytes at a time. Remember the last successful offset.
 	// if UnpackDir fails, read again from that offset
 	t.Logf("NOW TRY PARTIAL")
-	offset := uint64(0)
+	i, amt, offset = 0, 0, 0
 	for {
 		var b []byte
 		var d *Dir
-		var amt int
 		if b, err = clnt.Read(dirfid, offset, 128); err != nil {
 			t.Fatalf("%v", err)
 		}
