@@ -273,11 +273,10 @@ func (ufs *Ufs) Attach(req *SrvReq) {
 
 	tc := req.Tc
 	fid := new(ufsFid)
-	if len(tc.Aname) == 0 {
-		fid.path = ufs.Root
-	} else {
-		fid.path = tc.Aname
-	}
+	// You can think of the ufs.Root as a 'chroot' of a sort.
+	// clients attach are not allowed to go outside the
+	// directory represented by ufs.Root
+	fid.path = path.Join(ufs.Root, tc.Aname)
 
 	req.Fid.Aux = fid
 	err := fid.stat()
