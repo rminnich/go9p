@@ -558,7 +558,7 @@ func lookup(uid string, group bool) (uint32, *Error) {
 	return uint32(u), nil
 }
 
-func (u*Ufs) Wstat(req *SrvReq) {
+func (u *Ufs) Wstat(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
 	err := fid.stat()
 	if err != nil {

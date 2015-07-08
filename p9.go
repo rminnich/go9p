@@ -485,7 +485,7 @@ func UnpackDir(buf []byte, dotu bool) (d *Dir, b []byte, amt int, err error) {
 		return nil, nil, 0, err
 	}
 
-	return d, b, len(buf)-len(b), nil
+	return d, b, len(buf) - len(b), nil
 
 }
 

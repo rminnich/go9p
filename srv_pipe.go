@@ -19,8 +19,8 @@ type pipeFid struct {
 	dirents   []byte
 	diroffset uint64
 	st        os.FileInfo
-	data []uint8
-	eof bool
+	data      []uint8
+	eof       bool
 }
 
 type Pipefs struct {
@@ -381,5 +381,5 @@ func (*Pipefs) Stat(req *SrvReq) {
 }
 
 func (*Pipefs) Wstat(req *SrvReq) {
-		req.RespondError(Eperm)
+	req.RespondError(Eperm)
 }

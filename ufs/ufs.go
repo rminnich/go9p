@@ -5,9 +5,9 @@
 package main
 
 import (
-	"github.com/rminnich/go9p"
 	"flag"
 	"fmt"
+	"github.com/rminnich/go9p"
 	"log"
 )
 
@@ -24,7 +24,7 @@ func main() {
 	ufs.Debuglevel = *debug
 	ufs.Start(ufs)
 
-	fmt.Print("ufs starting\n");
+	fmt.Print("ufs starting\n")
 	// determined by build tags
 	//extraFuncs()
 	err := ufs.StartNetListener("tcp", *addr)

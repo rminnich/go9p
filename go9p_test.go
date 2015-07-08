@@ -11,9 +11,10 @@ import (
 	"net"
 	"os"
 	"path"
-	"testing"
 	"syscall"
+	"testing"
 )
+
 const numDir = 16384
 
 var addr = flag.String("addr", ":5640", "network address")
@@ -32,7 +33,7 @@ func TestUnpackDir(t *testing.T) {
 		var err error
 		if _, b, _, err = UnpackDir(b, true); err != nil {
 			t.Fatalf("Unpackdir: %v", err)
-		} 
+		}
 	}
 }
 
@@ -158,7 +159,7 @@ func TestAttachOpenReaddir(t *testing.T) {
 			t.Logf("len(b) %v\n", len(b))
 			if d, b, amt, err = UnpackDir(b, ufs.Dotu); err != nil {
 				// this error is expected ...
-				t.Logf("unpack failed (it's ok!). retry at offset %v\n", 
+				t.Logf("unpack failed (it's ok!). retry at offset %v\n",
 					offset)
 				break
 			} else {
@@ -182,7 +183,7 @@ func TestPipefs(t *testing.T) {
 	pipefs.Debuglevel = *debug
 	pipefs.Start(pipefs)
 
-	t.Logf("pipefs starting\n");
+	t.Logf("pipefs starting\n")
 	d, err := ioutil.TempDir("", "TestPipeFS")
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -236,17 +237,17 @@ func TestPipefs(t *testing.T) {
 		} else {
 			t.Logf("read %v bytes\n", n)
 		}
-		
+
 	}
 }
 
 func BenchmarkPipeFS(bb *testing.B) {
-		for i := 0; i < bb.N; i++ {
-			if _, err := f.Write(b); err != nil {
-				bb.Errorf("write failed: %v\n", err)
-			}
-			if _, err := f.Read(b); err != nil {
-				bb.Errorf("read failed: %v\n", err)
-			}
+	for i := 0; i < bb.N; i++ {
+		if _, err := f.Write(b); err != nil {
+			bb.Errorf("write failed: %v\n", err)
 		}
+		if _, err := f.Read(b); err != nil {
+			bb.Errorf("read failed: %v\n", err)
+		}
+	}
 }
