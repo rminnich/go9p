@@ -448,19 +448,23 @@ func (*Ufs) Read(req *SrvReq) {
 				req.RespondError(toError(e))
 				return
 			}
-			fid.dirents = nil
-
-			for i := 0; i < len(fid.dirs); i++ {
-				path := fid.path + "/" + fid.dirs[i].Name()
-				st, _ := dir2Dir(path, fid.dirs[i], req.Conn.Dotu, req.Conn.Srv.Upool)
-				if st == nil {
-					continue
-				}
-				b := PackDir(st, req.Conn.Dotu)
-				fid.dirents = append(fid.dirents, b...)
-				count += len(b)
-			}
 		}
+
+		fid.dirents = nil
+		for i := 0; i < len(fid.dirs); i++ {
+			path := fid.path + "/" + fid.dirs[i].Name()
+			st, _ := dir2Dir(path, fid.dirs[i], req.Conn.Dotu, req.Conn.Srv.Upool)
+			if st == nil {
+				continue
+			}
+			b := PackDir(st, req.Conn.Dotu)
+			if uint64(count+len(b)) > tc.Offset+uint64(tc.Count) {
+				break // do not return partial entries
+			}
+			fid.dirents = append(fid.dirents, b...)
+			count += len(b)
+		}
+
 		switch {
 		case tc.Offset > uint64(len(fid.dirents)):
 			count = 0
