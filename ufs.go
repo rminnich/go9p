@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -19,12 +20,13 @@ import (
 )
 
 type ufsFid struct {
-	path      string
-	file      *os.File
-	dirs      []os.FileInfo
-	dirents   []byte
-	diroffset uint64
-	st        os.FileInfo
+	path       string
+	file       *os.File
+	dirs       []os.FileInfo
+	direntends []int
+	dirents    []byte
+	diroffset  uint64
+	st         os.FileInfo
 }
 
 type Ufs struct {
@@ -448,21 +450,20 @@ func (*Ufs) Read(req *SrvReq) {
 				req.RespondError(toError(e))
 				return
 			}
-		}
 
-		fid.dirents = nil
-		for i := 0; i < len(fid.dirs); i++ {
-			path := fid.path + "/" + fid.dirs[i].Name()
-			st, _ := dir2Dir(path, fid.dirs[i], req.Conn.Dotu, req.Conn.Srv.Upool)
-			if st == nil {
-				continue
+			fid.dirents = nil
+			fid.direntends = nil
+			for i := 0; i < len(fid.dirs); i++ {
+				path := fid.path + "/" + fid.dirs[i].Name()
+				st, _ := dir2Dir(path, fid.dirs[i], req.Conn.Dotu, req.Conn.Srv.Upool)
+				if st == nil {
+					continue
+				}
+				b := PackDir(st, req.Conn.Dotu)
+				fid.dirents = append(fid.dirents, b...)
+				count += len(b)
+				fid.direntends = append(fid.direntends, count)
 			}
-			b := PackDir(st, req.Conn.Dotu)
-			if uint64(count+len(b)) > tc.Offset+uint64(tc.Count) {
-				break // do not return partial entries
-			}
-			fid.dirents = append(fid.dirents, b...)
-			count += len(b)
 		}
 
 		switch {
@@ -472,6 +473,23 @@ func (*Ufs) Read(req *SrvReq) {
 			count = int(tc.Count)
 		default:
 			count = len(fid.dirents[tc.Offset:])
+		}
+
+		if !*Akaros {
+			nextend := sort.SearchInts(fid.direntends, int(tc.Offset)+count)
+			if nextend < len(fid.direntends) {
+				if fid.direntends[nextend] > int(tc.Offset)+count {
+					if nextend > 0 {
+						count = fid.direntends[nextend-1] - int(tc.Offset)
+					} else {
+						count = 0
+					}
+				}
+			}
+			if count == 0 && int(tc.Offset) < len(fid.dirents) && len(fid.dirents) > 0 {
+				req.RespondError(&Error{"too small read size for dir entry", EINVAL})
+				return
+			}
 		}
 
 		copy(rc.Data, fid.dirents[tc.Offset:int(tc.Offset)+count])

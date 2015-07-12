@@ -168,6 +168,24 @@ func TestAttachOpenReaddir(t *testing.T) {
 			}
 		}
 	}
+
+	t.Logf("NOW TRY WAY TOO SMALL")
+	i, amt, offset = 0, 0, 0
+	for {
+		var b []byte
+		if b, err = clnt.Read(dirfid, offset, 32); err != nil {
+			t.Logf("dirread fails as expected: %v\n", err)
+			break
+		}
+		if offset == 0 && len(b) == 0 {
+			t.Fatalf("too short dirread returns 0 (no error)")
+		}
+		if len(b) == 0 {
+			break
+		}
+		// todo: add entry accumulation and validation here..
+		offset += uint64(len(b))
+	}
 }
 
 var f *File
