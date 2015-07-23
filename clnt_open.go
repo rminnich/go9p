@@ -95,3 +95,9 @@ func (clnt *Clnt) FOpen(path string, mode uint8) (*File, error) {
 
 	return &File{fid, 0}, nil
 }
+
+// FidFile returns a File that represents the given Fid, initially at the given
+// offset.
+func FidFile(fid *Fid, offset uint64) *File {
+	return &File{fid, offset}
+}
