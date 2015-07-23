@@ -448,6 +448,12 @@ func (clnt *Clnt) logFcall(fc *Fcall) {
 	}
 }
 
+// FidFile returns a File that represents the given Fid, initially at the given
+// offset.
+func FidFile(fid *Fid, offset uint64) *File {
+	return &File{fid, offset}
+}
+
 func init() {
 	clnts = new(ClntList)
 	if sop, ok := (interface{}(clnts)).(StatsOps); ok {
