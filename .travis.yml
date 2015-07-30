@@ -5,7 +5,8 @@ go:
  - 1.3
  - release
  - tip
-
+before_install:
+ - mkdir ../../rminnich && ln -s `pwd` ../../rminnich/go9p
 script:
  - go test ./...
 
