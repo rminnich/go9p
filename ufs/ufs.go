@@ -16,7 +16,7 @@ var debug = flag.Int("debug", 0, "print debug messages")
 var root = flag.String("root", "/", "root filesystem")
 
 func main() {
-	lag.Parse()
+	flag.Parse()
 	ufs := new(go9p.Ufs)
 	ufs.Dotu = true
 	ufs.Id = "ufs"
