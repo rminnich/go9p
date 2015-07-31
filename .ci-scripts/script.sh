@@ -2,4 +2,8 @@
 
 set -x
 
-go test ./...
+if [ "" = "tip" ]; then
+	goveralls -service=travis-ci;
+else
+	go test ./...;
+fi
