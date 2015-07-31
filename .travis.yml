@@ -6,7 +6,16 @@ go:
  - release
  - tip
 before_install:
- - mkdir ../../rminnich && ln -s `pwd` ../../rminnich/go9p
+ - .ci-scripts/before_install.sh
+install:
+ - .ci-scripts/install.sh
+before_script:
+ - .ci-scripts/before_script.sh
 script:
- - go test ./...
-
+ - .ci-scripts/script.sh
+after_success:
+ - .ci-scripts/after_succeess.sh
+after_failure:
+ - .ci-scripts/after_failure.sh
+after_script:
+ - .ci-scripts/after_script.sh
