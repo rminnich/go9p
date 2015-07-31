@@ -2,7 +2,7 @@
 
 set -x
 
-if [ "" = "tip" ]; then
+if [ "$TRAVIS_GO_VERSION" = "tip" ]; then
 	goveralls -service=travis-ci;
 else
 	go test ./...;
