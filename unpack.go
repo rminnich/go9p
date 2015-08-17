@@ -112,6 +112,8 @@ func Unpack(buf []byte, dotu bool) (fc *Fcall, err error, fcsz int) {
 			} else {
 				fc.Unamenum = NOUID
 			}
+		} else {
+			fc.Unamenum = NOUID
 		}
 
 	case Rerror:
