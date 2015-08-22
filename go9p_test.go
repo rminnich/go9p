@@ -41,7 +41,7 @@ func TestAttachOpenReaddir(t *testing.T) {
 	var err error
 	flag.Parse()
 	ufs := new(Ufs)
-	ufs.Dotu = false
+	ufs.Dotu = true
 	ufs.Id = "ufs"
 	ufs.Root = *root
 	ufs.Debuglevel = *debug
@@ -194,7 +194,7 @@ var b = make([]byte, 1048576/8)
 // Not sure we want this, and the test has issues. Revive it if we ever find a use for it.
 func TestPipefs(t *testing.T) {
 	pipefs := new(Pipefs)
-	pipefs.Dotu = false
+	pipefs.Dotu = true
 	pipefs.Msize = 1048576
 	pipefs.Id = "pipefs"
 	pipefs.Root = *root
