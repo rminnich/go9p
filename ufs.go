@@ -100,7 +100,7 @@ func omode2uflags(mode uint8) int {
 func dir2Qid(d os.FileInfo) *Qid {
 	var qid Qid
 
-	qid.Path = uint64(d.Sys().(*syscall.Stat_t).Ino)
+	qid.Path = d.Sys().(*syscall.Stat_t).Ino
 	qid.Version = uint32(d.ModTime().UnixNano() / 1000000)
 	qid.Type = dir2QidType(d)
 
@@ -294,9 +294,10 @@ func (ufs *Ufs) Attach(req *SrvReq) {
 func (*Ufs) Flush(req *SrvReq) {}
 
 func (*Ufs) Walk(req *SrvReq) {
+
 	fid := req.Fid.Aux.(*ufsFid)
 	tc := req.Tc
-
+	log.Printf("fid is %+v", fid)
 	err := fid.stat()
 	if err != nil {
 		req.RespondError(err)
@@ -546,6 +547,7 @@ func (*Ufs) Remove(req *SrvReq) {
 
 func (*Ufs) Stat(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
+	log.Println("Stat fid is", fid)
 	err := fid.stat()
 	if err != nil {
 		req.RespondError(err)

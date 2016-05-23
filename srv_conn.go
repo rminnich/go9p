@@ -7,6 +7,7 @@ package go9p
 import (
 	"fmt"
 	"log"
+    "github.com/davecgh/go-spew/spew"
 	"net"
 )
 
@@ -35,9 +36,12 @@ func (srv *Srv) NewConn(c net.Conn) {
 		op.ConnOpened(conn)
 	}
 
-	if sop, ok := (interface{}(conn)).(StatsOps); ok {
+
+	if sop, ok := (interface{}(conn)).(StatsOps); ok {   
 		sop.statsRegister()
+		log.Println("register stats!")
 	}
+	
 
 	go conn.recv()
 	go conn.send()
@@ -126,7 +130,8 @@ func (conn *Conn) recv() {
 			if conn.Debuglevel > 0 {
 				conn.logFcall(req.Tc)
 				if conn.Debuglevel&DbgPrintPackets != 0 {
-					log.Println(">->", conn.Id, fmt.Sprint(req.Tc.Pkt))
+					//log.Println(">->", conn.Id, fmt.Sprint(req.Tc.Pkt))
+					log.Println(">->", conn.Id, spew.Sdump(req.Tc.Pkt))
 				}
 
 				if conn.Debuglevel&DbgPrintFcalls != 0 {
@@ -183,7 +188,8 @@ func (conn *Conn) send() {
 			if conn.Debuglevel > 0 {
 				conn.logFcall(req.Rc)
 				if conn.Debuglevel&DbgPrintPackets != 0 {
-					log.Println("<-<", conn.Id, fmt.Sprint(req.Rc.Pkt))
+					//log.Println("<-<", conn.Id, fmt.Sprint(req.Rc.Pkt))
+					log.Println("<-<", conn.Id, spew.Sdump(req.Rc.Pkt))
 				}
 
 				if conn.Debuglevel&DbgPrintFcalls != 0 {

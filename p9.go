@@ -42,6 +42,7 @@ const (
 	Rstat
 	Twstat
 	Rwstat
+	Theartbeat
 	Tlast
 )
 
