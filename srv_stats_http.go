@@ -27,6 +27,7 @@ func register(s string, h http.Handler) {
 	mux.Unlock()
 }
 func (srv *Srv) statsRegister() {
+
 	httponce.Do(func() {
 		http.HandleFunc("/go9p/", StatsHandler)
 		go http.ListenAndServe(":6060", nil)

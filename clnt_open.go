@@ -6,6 +6,7 @@ package go9p
 
 import (
 	"strings"
+    "log"
 )
 
 // Opens the file associated with the fid. Returns nil if
@@ -82,8 +83,10 @@ func (clnt *Clnt) FCreate(path string, perm uint32, mode uint8) (*File, error) {
 
 // Opens a named file. Returns the opened file, or an Error.
 func (clnt *Clnt) FOpen(path string, mode uint8) (*File, error) {
+    log.Println("FOpen", path)
 	fid, err := clnt.FWalk(path)
 	if err != nil {
+        log.Println("failed after walk trying to walk path", path)
 		return nil, err
 	}
 

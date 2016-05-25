@@ -294,9 +294,10 @@ func (ufs *Ufs) Attach(req *SrvReq) {
 func (*Ufs) Flush(req *SrvReq) {}
 
 func (*Ufs) Walk(req *SrvReq) {
+
 	fid := req.Fid.Aux.(*ufsFid)
 	tc := req.Tc
-
+	log.Printf("fid is %+v", fid)
 	err := fid.stat()
 	if err != nil {
 		req.RespondError(err)
@@ -546,6 +547,7 @@ func (*Ufs) Remove(req *SrvReq) {
 
 func (*Ufs) Stat(req *SrvReq) {
 	fid := req.Fid.Aux.(*ufsFid)
+	log.Println("Stat fid is", fid)
 	err := fid.stat()
 	if err != nil {
 		req.RespondError(err)

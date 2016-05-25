@@ -12,13 +12,13 @@ import (
 
 // The FStatOp interface provides a single operation (Stat) that will be
 // called before a file stat is sent back to the client. If implemented,
-// the operation should update the data in the srvFile struct.
+// the operation should update the data in the SrvFile struct.
 type FStatOp interface {
 	Stat(fid *FFid) error
 }
 
 // The FWstatOp interface provides a single operation (Wstat) that will be
-// called when the client requests the srvFile metadata to be modified. If
+// called when the client requests the SrvFile metadata to be modified. If
 // implemented, the operation will be called when Twstat message is received.
 // If not implemented, "permission denied" error will be sent back. If the
 // operation returns an Error, the error is send back to the client.
@@ -43,16 +43,16 @@ type FWriteOp interface {
 }
 
 // If the FCreateOp interface is implemented, the Create operation will be called
-// when the client attempts to create a file in the srvFile implementing the interface.
+// when the client attempts to create a file in the SrvFile implementing the interface.
 // If not implemented, "permission denied" error will be send back. If successful,
 // the operation should call (*File)Add() to add the created file to the directory.
 // The operation returns the created file, or the error occured while creating it.
 type FCreateOp interface {
-	Create(fid *FFid, name string, perm uint32) (*srvFile, error)
+	Create(fid *FFid, name string, perm uint32) (*SrvFile, error)
 }
 
 // If the FRemoveOp interface is implemented, the Remove operation will be called
-// when the client attempts to create a file in the srvFile implementing the interface.
+// when the client attempts to create a file in the SrvFile implementing the interface.
 // If not implemented, "permission denied" error will be send back.
 // The operation returns nil if successful, or the error that occured while removing
 // the file.
@@ -78,22 +78,23 @@ const (
 	Fremoved FFlags = 1 << iota
 )
 
-// The srvFile type represents a file (or directory) served by the file server.
-type srvFile struct {
+// The SrvFile type represents a file (or directory) served by the file server.
+type SrvFile struct {
 	sync.Mutex
 	Dir
 	flags FFlags
 
-	Parent        *srvFile // parent
-	next, prev    *srvFile // siblings, guarded by parent.Lock
-	cfirst, clast *srvFile // children (if directory)
+	Parent        *SrvFile // parent
+	next, prev    *SrvFile // siblings, guarded by parent.Lock
+	cfirst, clast *SrvFile // children (if directory)
 	ops           interface{}
 }
 
+
 type FFid struct {
-	F       *srvFile
+	F       *SrvFile
 	Fid     *SrvFid
-	dirs    []*srvFile // used for readdir
+	dirs    []*SrvFile // used for readdir
 	dirents []byte     // serialized version of dirs
 }
 
@@ -101,7 +102,7 @@ type FFid struct {
 // simple trees of synthetic files.
 type Fsrv struct {
 	Srv
-	Root *srvFile
+	Root *SrvFile
 }
 
 var lock sync.Mutex
@@ -111,7 +112,7 @@ var Enoent = &Error{"file not found", ENOENT}
 var Enotempty = &Error{"directory not empty", EPERM}
 
 // Creates a file server with root as root directory
-func NewsrvFileSrv(root *srvFile) *Fsrv {
+func NewsrvFileSrv(root *SrvFile) *Fsrv {
 	srv := new(Fsrv)
 	srv.Root = root
 	root.Parent = root // make sure we can .. in root
@@ -121,7 +122,7 @@ func NewsrvFileSrv(root *srvFile) *Fsrv {
 
 // Initializes the fields of a file and add it to a directory.
 // Returns nil if successful, or an error.
-func (f *srvFile) Add(dir *srvFile, name string, uid User, gid Group, mode uint32, ops interface{}) error {
+func (f *SrvFile) Add(dir *SrvFile, name string, uid User, gid Group, mode uint32, ops interface{}) error {
 
 	lock.Lock()
 	qpath := qnext
@@ -185,7 +186,7 @@ func (f *srvFile) Add(dir *srvFile, name string, uid User, gid Group, mode uint3
 }
 
 // Removes a file from its parent directory.
-func (f *srvFile) Remove() {
+func (f *SrvFile) Remove() {
 	f.Lock()
 	if (f.flags & Fremoved) != 0 {
 		f.Unlock()
@@ -214,7 +215,7 @@ func (f *srvFile) Remove() {
 	p.Unlock()
 }
 
-func (f *srvFile) Rename(name string) error {
+func (f *SrvFile) Rename(name string) error {
 	p := f.Parent
 	p.Lock()
 	defer p.Unlock()
@@ -229,8 +230,8 @@ func (f *srvFile) Rename(name string) error {
 }
 
 // Looks for a file in a directory. Returns nil if the file is not found.
-func (p *srvFile) Find(name string) *srvFile {
-	var f *srvFile
+func (p *SrvFile) Find(name string) *SrvFile {
+	var f *SrvFile
 
 	p.Lock()
 	for f = p.cfirst; f != nil; f = f.next {
@@ -245,7 +246,7 @@ func (p *srvFile) Find(name string) *srvFile {
 // Checks if the specified user has permission to perform
 // certain operation on a file. Perm contains one or more
 // of DMREAD, DMWRITE, and DMEXEC.
-func (f *srvFile) CheckPerm(user User, perm uint32) bool {
+func (f *SrvFile) CheckPerm(user User, perm uint32) bool {
 	if user == nil {
 		return false
 	}
@@ -361,6 +362,8 @@ func (*Fsrv) Open(req *SrvReq) {
 	fid := req.Fid.Aux.(*FFid)
 	tc := req.Tc
 
+	log.Println("Mode is", tc.Mode)
+	log.Println("req.Fid.User is", req.Fid.User)
 	if !fid.F.CheckPerm(req.Fid.User, mode2Perm(tc.Mode)) {
 		req.RespondError(Eperm)
 		return
@@ -414,12 +417,12 @@ func (*Fsrv) Read(req *SrvReq) {
 		// serialize them all into an output buffer.
 		// This greatly simplifies the directory read.
 		if tc.Offset == 0 {
-			var g *srvFile
+			var g *SrvFile
 			fid.dirents = nil
 			f.Lock()
 			for n, g = 0, f.cfirst; g != nil; n, g = n+1, g.next {
 			}
-			fid.dirs = make([]*srvFile, n)
+			fid.dirs = make([]*SrvFile, n)
 			for n, g = 0, f.cfirst; g != nil; n, g = n+1, g.next {
 				fid.dirs[n] = g
 				fid.dirents = append(fid.dirents,
@@ -460,7 +463,7 @@ func (*Fsrv) Write(req *SrvReq) {
 	fid := req.Fid.Aux.(*FFid)
 	f := fid.F
 	tc := req.Tc
-
+	log.Println("Write", req)
 	if wop, ok := (f.ops).(FWriteOp); ok {
 		n, err := wop.Write(fid, tc.Data, tc.Offset)
 		if err != nil {
