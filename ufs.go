@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// +build !plan9
+
 package go9p
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -694,8 +695,3 @@ func (u *Ufs) Wstat(req *SrvReq) {
 
 	req.RespondRwstat()
 }
-
-/* enables "Akaros" capabilities, which right now means
- * a sane error message format.
- */
-var Akaros = flag.Bool("akaros", false, "Akaros extensions")
