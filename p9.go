@@ -271,6 +271,7 @@ var minFcusize = [...]uint32{
 	4,  /* Tstat fid[4] */
 	4,  /* Rstat stat[n] */
 	8,  /* Twstat fid[4] stat[n] */
+	0,  /* Rwstat */
 	20, /* Tbread fileid[8] offset[8] count[4] */
 	4,  /* Rbread count[4] */
 	20, /* Tbwrite fileid[8] offset[8] count[4] */
