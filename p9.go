@@ -369,6 +369,8 @@ func gstat(buf []byte, d *Dir, dotu bool) ([]byte, error) {
 		d.Gidnum = NOUID
 		d.Muidnum = NOUID
 	}
+	/* acknowledge the entire packet */
+	buf = buf[len(buf):]
 
 	return buf, nil
 }
