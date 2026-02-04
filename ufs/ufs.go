@@ -7,8 +7,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/rminnich/go9p"
 	"log"
+
+	"github.com/rminnich/go9p"
 )
 
 var addr = flag.String("addr", ":5640", "network address")
