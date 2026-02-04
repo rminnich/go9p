@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build !tinygo
+
 package go9p
 
 import (
@@ -9,7 +11,7 @@ import (
 	"sync"
 	"time"
 )
-
+fuck
 // The FStatOp interface provides a single operation (Stat) that will be
 // called before a file stat is sent back to the client. If implemented,
 // the operation should update the data in the srvFile struct.
