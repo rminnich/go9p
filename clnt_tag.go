@@ -15,7 +15,7 @@ type Tag struct {
 func (clnt *Clnt) TagAlloc(reqchan chan *Req) *Tag {
 	tag := new(Tag)
 	tag.clnt = clnt
-	tag.tag = uint16(clnt.tagpool.getId())
+	tag.tag = uint16(clnt.tagpool.Get())
 	tag.reqchan = reqchan
 	tag.respchan = make(chan *Req, 16)
 	tag.donechan = make(chan bool)
@@ -26,7 +26,7 @@ func (clnt *Clnt) TagAlloc(reqchan chan *Req) *Tag {
 
 func (clnt *Clnt) TagFree(tag *Tag) {
 	tag.donechan <- true
-	clnt.tagpool.putId(uint32(tag.tag))
+	clnt.tagpool.Put(uint32(tag.tag))
 }
 
 func (tag *Tag) reqAlloc() *Req {
@@ -88,7 +88,6 @@ func (tag *Tag) reqproc() {
 
 			case Tclunk:
 			case Tremove:
-				tag.clnt.fidpool.putId(fid.Fid)
 			}
 
 			tag.reqchan <- r

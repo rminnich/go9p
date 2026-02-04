@@ -14,7 +14,6 @@ func (clnt *Clnt) Remove(fid *Fid) error {
 	}
 
 	_, err = clnt.Rpc(tc)
-	clnt.fidpool.putId(fid.Fid)
 	fid.Fid = NOFID
 
 	return err

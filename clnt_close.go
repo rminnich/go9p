@@ -17,7 +17,6 @@ func (clnt *Clnt) Clunk(fid *Fid) (err error) {
 		_, err = clnt.Rpc(tc)
 	}
 
-	clnt.fidpool.putId(fid.Fid)
 	fid.walked = false
 	fid.Fid = NOFID
 	return

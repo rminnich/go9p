@@ -4,104 +4,29 @@
 
 package go9p
 
-import "sync"
+import "log"
 
-var m2id = [...]uint8{
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 4,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 5,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 4,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 6,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 4,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 5,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 4,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 7,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 4,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 5,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 4,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 6,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 4,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 5,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 4,
-	0, 1, 0, 2, 0, 1, 0, 3,
-	0, 1, 0, 2, 0, 1, 0, 0,
+type Pool struct {
+	low, high uint32
+	id        chan uint32
 }
 
-type pool struct {
-	sync.Mutex
-	need  int
-	nchan chan uint32
-	maxid uint32
-	imap  []byte
+func NewPool(low, high uint32) *Pool {
+	id := make(chan uint32, high-low+1)
+
+	for i := low; i < high; i++ {
+		id <- i
+	}
+	return &Pool{id: id, low: low, high: high}
 }
 
-func newPool(maxid uint32) *pool {
-	p := new(pool)
-	p.maxid = maxid
-	p.nchan = make(chan uint32)
-
-	return p
+func (p *Pool) Get() uint32 {
+	return <-p.id
 }
 
-func (p *pool) getId() uint32 {
-	var n uint32 = 0
-	var ret uint32
-
-	p.Lock()
-	for n = 0; n < uint32(len(p.imap)); n++ {
-		if p.imap[n] != 0xFF {
-			break
-		}
+func (p *Pool) Put(id uint32) {
+	if id < p.low || id > p.high {
+		log.Panicf("id out of range")
 	}
-
-	if int(n) >= len(p.imap) {
-		m := uint32(len(p.imap) + 32)
-		if uint32(m*8) > p.maxid {
-			m = p.maxid/8 + 1
-		}
-
-		b := make([]byte, m)
-		copy(b, p.imap)
-		p.imap = b
-	}
-
-	if n >= uint32(len(p.imap)) {
-		p.need++
-		p.Unlock()
-		ret = <-p.nchan
-	} else {
-		ret = uint32(m2id[p.imap[n]])
-		p.imap[n] |= 1 << ret
-		ret += n * 8
-		p.Unlock()
-	}
-
-	return ret
-}
-
-func (p *pool) putId(id uint32) {
-	p.Lock()
-	if p.need > 0 {
-		p.nchan <- id
-		p.need--
-		p.Unlock()
-		return
-	}
-
-	p.imap[id/8] &= ^(1 << (id % 8))
-	p.Unlock()
+	p.id <- id
 }

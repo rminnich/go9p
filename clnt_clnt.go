@@ -27,8 +27,7 @@ type Clnt struct {
 	Log        *Logger
 
 	conn     net.Conn
-	tagpool  *pool
-	fidpool  *pool
+	tagpool  *Pool
 	reqout   chan *Req
 	done     chan bool
 	reqfirst *Req
@@ -317,8 +316,7 @@ func NewClnt(c net.Conn, msize uint32, dotu bool) *Clnt {
 	clnt.Debuglevel = DefaultDebuglevel
 	clnt.Log = DefaultLogger
 	clnt.Id = c.RemoteAddr().String() + ":"
-	clnt.tagpool = newPool(uint32(NOTAG))
-	clnt.fidpool = newPool(NOFID)
+	clnt.tagpool = NewPool(0, uint32(NOTAG))
 	clnt.reqout = make(chan *Req)
 	clnt.done = make(chan bool)
 	clnt.reqchan = make(chan *Req, 16)
@@ -375,13 +373,11 @@ func Connect(c net.Conn, msize uint32, dotu bool) (*Clnt, error) {
 	return clnt, nil
 }
 
+var _fid uint32
+
 // Creates a new Fid object for the client
 func (clnt *Clnt) FidAlloc() *Fid {
-	fid := new(Fid)
-	fid.Fid = clnt.fidpool.getId()
-	fid.Clnt = clnt
-
-	return fid
+	return &Fid{Fid: atomic.AddUint32(&_fid, 1), Clnt: clnt}
 }
 
 func (clnt *Clnt) NewFcall() *Fcall {
@@ -411,7 +407,7 @@ func (clnt *Clnt) ReqAlloc() *Req {
 	default:
 		req = new(Req)
 		req.Clnt = clnt
-		req.tag = uint16(clnt.tagpool.getId())
+		req.tag = uint16(clnt.tagpool.Get())
 	}
 	return req
 }
@@ -429,7 +425,7 @@ func (clnt *Clnt) ReqFree(req *Req) {
 	case clnt.reqchan <- req:
 		break
 	default:
-		clnt.tagpool.putId(uint32(req.tag))
+		clnt.tagpool.Put(uint32(req.tag))
 	}
 }
 
