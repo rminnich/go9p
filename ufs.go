@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -275,7 +276,7 @@ func (ufs *Ufs) Attach(req *SrvReq) {
 	// You can think of the ufs.Root as a 'chroot' of a sort.
 	// clients attach are not allowed to go outside the
 	// directory represented by ufs.Root
-	fid.path = path.Join(ufs.Root, tc.Aname)
+	fid.path = filepath.Join(ufs.Root, tc.Aname)
 
 	req.Fid.Aux = fid
 	err := fid.stat()
@@ -642,11 +643,11 @@ func (u *Ufs) Wstat(req *SrvReq) {
 		// cwd.
 		var destpath string
 		if dir.Name[0] == '/' {
-			destpath = path.Join(u.Root, dir.Name)
+			destpath = filepath.Join(u.Root, dir.Name)
 			fmt.Printf("/ results in %s\n", destpath)
 		} else {
 			fiddir, _ := path.Split(fid.path)
-			destpath = path.Join(fiddir, dir.Name)
+			destpath = filepath.Join(fiddir, dir.Name)
 			fmt.Printf("rel  results in %s\n", destpath)
 		}
 		err := syscall.Rename(fid.path, destpath)

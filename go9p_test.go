@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path"
+	"path/filepath"
 	"syscall"
 	"testing"
 )
@@ -82,7 +82,7 @@ func TestAttachOpenReaddir(t *testing.T) {
 
 	// Now create a whole bunch of files to test readdir
 	for i := 0; i < numDir; i++ {
-		f := path.Join(dir, fmt.Sprintf("%d", i))
+		f := filepath.Join(dir, fmt.Sprintf("%d", i))
 		if err := os.WriteFile(f, []byte(f), 0600); err != nil {
 			t.Fatalf("Create %v: got %v, want nil", f, err)
 		}
@@ -214,7 +214,7 @@ func TestPipefs(t *testing.T) {
 			t.Fatalf("%v", err)
 		}
 	}()
-	fn := path.Join(d, "fifo")
+	fn := filepath.Join(d, "fifo")
 	if err := syscall.Mkfifo(fn, 0600); err != nil {
 		t.Fatalf("%v", err)
 	}
