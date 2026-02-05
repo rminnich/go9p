@@ -44,9 +44,9 @@ func Unpack(buf []byte, dotu bool) (fc *Fcall, err error, fcsz int) {
 
 	var sz uint32
 	if dotu {
-		sz = minFcsize[fc.Type-Tversion]
-	} else {
 		sz = minFcusize[fc.Type-Tversion]
+	} else {
+		sz = minFcsize[fc.Type-Tversion]
 	}
 
 	if fc.Size < sz {
