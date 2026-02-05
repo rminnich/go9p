@@ -20,10 +20,15 @@ func NewPool(low, high uint32) *Pool {
 	return &Pool{id: id, low: low, high: high}
 }
 
+// Get gets an id. It will block until there are some.
 func (p *Pool) Get() uint32 {
 	return <-p.id
 }
 
+// Put puts an ID. Because of the way this code
+// was written, it can only panic if the ID is out of
+// range. Tags are 16 bits, so in principle we can
+// just change this to be uint16. Maybe that's the ticket.
 func (p *Pool) Put(id uint32) {
 	if id < p.low || id > p.high {
 		log.Panicf("id out of range")
