@@ -1,0 +1,5 @@
+# github.com/rminnich/go9p/ufs
+ufs/ufs.go:21:18: undefined: go9p.Ufs
+	github.com/rminnich/go9p		coverage: 0.0% of statements
+FAIL	github.com/rminnich/go9p/ufs [build failed]
+FAIL
