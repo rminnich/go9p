@@ -7,7 +7,6 @@
 package go9p
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -15,14 +14,13 @@ import (
 )
 
 type pipeFid struct {
-	path      string
-	file      *os.File
-	dirs      []os.FileInfo
-	dirents   []byte
-	diroffset uint64
-	st        os.FileInfo
-	data      []uint8
-	eof       bool
+	path    string
+	file    *os.File
+	dirs    []os.FileInfo
+	dirents []byte
+	st      os.FileInfo
+	data    []uint8
+	eof     bool
 }
 
 type Pipefs struct {
@@ -39,42 +37,6 @@ func (fid *pipeFid) stat() *Error {
 	}
 
 	return nil
-}
-
-// Dir is an instantiation of the p.Dir structure
-// that can act as a receiver for local methods.
-type pipeDir struct {
-	Dir
-}
-
-func (dir *pipeDir) dotu(path string, d os.FileInfo, upool Users, sysMode *syscall.Stat_t) {
-	u := upool.Uid2User(int(sysMode.Uid))
-	g := upool.Gid2Group(int(sysMode.Gid))
-	dir.Uid = u.Name()
-	if dir.Uid == "" {
-		dir.Uid = "none"
-	}
-
-	dir.Gid = g.Name()
-	if dir.Gid == "" {
-		dir.Gid = "none"
-	}
-	dir.Muid = "none"
-	dir.Ext = ""
-	dir.Uidnum = uint32(u.Id())
-	dir.Gidnum = uint32(g.Id())
-	dir.Muidnum = NOUID
-	if d.Mode()&os.ModeSymlink != 0 {
-		var err error
-		dir.Ext, err = os.Readlink(path)
-		if err != nil {
-			dir.Ext = ""
-		}
-	} else if isBlock(d) {
-		dir.Ext = fmt.Sprintf("b %d %d", sysMode.Rdev>>24, sysMode.Rdev&0xFFFFFF)
-	} else if isChar(d) {
-		dir.Ext = fmt.Sprintf("c %d %d", sysMode.Rdev>>24, sysMode.Rdev&0xFFFFFF)
-	}
 }
 
 func (*Pipefs) ConnOpened(conn *Conn) {
@@ -98,7 +60,7 @@ func (*Pipefs) FidDestroy(sfid *SrvFid) {
 
 	fid = sfid.Aux.(*pipeFid)
 	if fid.file != nil {
-		fid.file.Close()
+		_ = fid.file.Close()
 	}
 }
 
@@ -196,8 +158,8 @@ func (*Pipefs) Create(req *SrvReq) {
 	}
 
 	path := fid.path + "/" + tc.Name
-	var e error = nil
-	var file *os.File = nil
+	var e error
+	var file *os.File
 	switch {
 	case tc.Perm&DMDIR != 0:
 		e = os.Mkdir(path, os.FileMode(tc.Perm&0777))
@@ -206,7 +168,8 @@ func (*Pipefs) Create(req *SrvReq) {
 		e = os.Symlink(tc.Ext, path)
 
 	case tc.Perm&DMLINK != 0:
-		n, e := strconv.ParseUint(tc.Ext, 10, 0)
+		var n uint64
+		n, e = strconv.ParseUint(tc.Ext, 10, 0)
 		if e != nil {
 			break
 		}
@@ -226,7 +189,7 @@ func (*Pipefs) Create(req *SrvReq) {
 		return
 
 	default:
-		var mode uint32 = tc.Perm & 0777
+		mode := tc.Perm & 0777
 		if req.Conn.Dotu {
 			if tc.Perm&DMSETUID > 0 {
 				mode |= syscall.S_ISUID
@@ -275,7 +238,7 @@ func (*Pipefs) Read(req *SrvReq) {
 		return
 	}
 
-	InitRread(rc, tc.Count)
+	_ = InitRread(rc, tc.Count)
 	var count int
 	var e error
 	if fid.st.IsDir() {
@@ -283,7 +246,7 @@ func (*Pipefs) Read(req *SrvReq) {
 			var e error
 			// If we got here, it was open. Can't really seek
 			// in most cases, just close and reopen it.
-			fid.file.Close()
+			_ = fid.file.Close()
 			if fid.file, e = os.OpenFile(fid.path, omode2uflags(req.Fid.Omode), 0); e != nil {
 				req.RespondError(toError(e))
 				return

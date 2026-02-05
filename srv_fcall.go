@@ -55,7 +55,7 @@ func (srv *Srv) auth(req *SrvReq) {
 		return
 	}
 
-	var user User = nil
+	var user User
 	if tc.Unamenum != NOUID || conn.Dotu {
 		user = srv.Upool.Uid2User(int(tc.Unamenum))
 	} else if tc.Uname != "" {
@@ -110,7 +110,7 @@ func (srv *Srv) attach(req *SrvReq) {
 		}
 	}
 
-	var user User = nil
+	var user User
 	if tc.Unamenum != NOUID || conn.Dotu {
 		user = srv.Upool.Uid2User(int(tc.Unamenum))
 	} else if tc.Uname != "" {
@@ -144,7 +144,7 @@ func (srv *Srv) attachPost(req *SrvReq) {
 func (srv *Srv) flush(req *SrvReq) {
 	conn := req.Conn
 	tag := req.Tc.Oldtag
-	PackRflush(req.Rc)
+	_ = PackRflush(req.Rc)
 	conn.Lock()
 	r := conn.reqs[tag]
 	if r != nil {

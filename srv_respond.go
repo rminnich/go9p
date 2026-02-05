@@ -25,11 +25,11 @@ type SrvReqOps interface {
 func (req *SrvReq) RespondError(err interface{}) {
 	switch e := err.(type) {
 	case *Error:
-		PackRerror(req.Rc, e.Error(), uint32(e.Errornum), req.Conn.Dotu)
+		_ = PackRerror(req.Rc, e.Error(), uint32(e.Errornum), req.Conn.Dotu)
 	case error:
-		PackRerror(req.Rc, e.Error(), uint32(EIO), req.Conn.Dotu)
+		_ = PackRerror(req.Rc, e.Error(), uint32(EIO), req.Conn.Dotu)
 	default:
-		PackRerror(req.Rc, fmt.Sprintf("%v", e), uint32(EIO), req.Conn.Dotu)
+		_ = PackRerror(req.Rc, fmt.Sprintf("%v", e), uint32(EIO), req.Conn.Dotu)
 	}
 
 	req.Respond()

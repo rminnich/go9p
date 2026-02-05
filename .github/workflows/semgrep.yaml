@@ -1,0 +1,46 @@
+---
+name: Semgrep Analysis
+on:
+  merge_group:
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - synchronize
+      - reopened
+  push:
+    branches:
+      - master
+  schedule:
+    # Run once a week (see https://crontab.guru)
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
+
+# Cancel any in-progress job when a new workflow is triggered
+concurrency:
+  cancel-in-progress: true
+  group: pre-commit-${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    name: Semgrep Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run Semgrep analysis
+        uses: returntocorp/semgrep-action@713efdd345f3035192eaa63f56867b88e63e4e5d # v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/ci
+            p/supply-chain
+            p/golang
+            p/trailofbits-go

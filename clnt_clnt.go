@@ -141,7 +141,6 @@ func (clnt *Clnt) recv() {
 			b := make([]byte, clntmsize*8)
 			copy(b, buf[0:pos])
 			buf = b
-			b = nil
 		}
 
 		n, oerr := clnt.conn.Read(buf[pos:])
@@ -161,17 +160,16 @@ func (clnt *Clnt) recv() {
 					b := make([]byte, atomic.LoadUint32(&clnt.Msize)*8)
 					copy(b, buf[0:pos])
 					buf = b
-					b = nil
 				}
 
 				break
 			}
 
-			fc, err, fcsize := Unpack(buf, clnt.Dotu)
+			fc, fcsize, err := Unpack(buf, clnt.Dotu)
 			clnt.Lock()
 			if err != nil {
 				clnt.err = err
-				clnt.conn.Close()
+				_ = clnt.conn.Close()
 				clnt.Unlock()
 				goto closed
 			}
@@ -179,7 +177,7 @@ func (clnt *Clnt) recv() {
 			if clnt.Debuglevel > 0 {
 				clnt.logFcall(fc)
 				if clnt.Debuglevel&DbgPrintPackets != 0 {
-					log.Println("}-}", clnt.Id, fmt.Sprint(fc.Pkt))
+					log.Println("}-}", clnt.Id, fmt.Sprintf("%v", fc.Pkt))
 				}
 
 				if clnt.Debuglevel&DbgPrintFcalls != 0 {
@@ -187,7 +185,7 @@ func (clnt *Clnt) recv() {
 				}
 			}
 
-			var r *Req = nil
+			var r *Req
 			for r = clnt.reqfirst; r != nil; r = r.next {
 				if r.Tc.Tag == fc.Tag {
 					break
@@ -196,7 +194,7 @@ func (clnt *Clnt) recv() {
 
 			if r == nil {
 				clnt.err = &Error{"unexpected response", EINVAL}
-				clnt.conn.Close()
+				_ = clnt.conn.Close()
 				clnt.Unlock()
 				goto closed
 			}
@@ -218,12 +216,10 @@ func (clnt *Clnt) recv() {
 			if r.Tc.Type != r.Rc.Type-1 {
 				if r.Rc.Type != Rerror {
 					r.Err = &Error{"invalid response", EINVAL}
-					log.Println(fmt.Sprintf("TTT %v", r.Tc))
-					log.Println(fmt.Sprintf("RRR %v", r.Rc))
-				} else {
-					if r.Err == nil {
-						r.Err = &Error{r.Rc.Error, r.Rc.Errornum}
-					}
+					log.Printf("TTT %v", r.Tc)
+					log.Printf("RRR %v", r.Rc)
+				} else if r.Err == nil {
+					r.Err = &Error{r.Rc.Error, r.Rc.Errornum}
 				}
 			}
 
@@ -284,7 +280,7 @@ func (clnt *Clnt) send() {
 			if clnt.Debuglevel > 0 {
 				clnt.logFcall(req.Tc)
 				if clnt.Debuglevel&DbgPrintPackets != 0 {
-					log.Println("{-{", clnt.Id, fmt.Sprint(req.Tc.Pkt))
+					log.Println("{-{", clnt.Id, fmt.Sprintf("%v", req.Tc.Pkt))
 				}
 
 				if clnt.Debuglevel&DbgPrintFcalls != 0 {
@@ -292,11 +288,18 @@ func (clnt *Clnt) send() {
 				}
 			}
 
-			for buf := req.Tc.Pkt; len(buf) > 0; {
+			// Copy the packet data before writing to prevent a race
+			// with Fcall buffer reuse. The recv goroutine may deliver
+			// the response (freeing the Fcall back to the pool) before
+			// send finishes writing, allowing PackT* to overwrite Pkt
+			// while conn.Write is still reading from it.
+			pkt := make([]byte, len(req.Tc.Pkt))
+			copy(pkt, req.Tc.Pkt)
+			for buf := pkt; len(buf) > 0; {
 				n, err := clnt.conn.Write(buf)
 				if err != nil {
 					/* just close the socket, will get signal on clnt.done */
-					clnt.conn.Close()
+					_ = clnt.conn.Close()
 					break
 				}
 

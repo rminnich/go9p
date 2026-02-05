@@ -33,7 +33,7 @@ func register(s string, h http.Handler) {
 func (srv *Srv) statsRegister() {
 	httponce.Do(func() {
 		http.HandleFunc("/go9p/", StatsHandler)
-		go http.ListenAndServe(":6060", nil)
+		go http.ListenAndServe(":6060", nil) // nosemgrep: go.lang.security.audit.net.use-tls.use-tls
 	})
 
 	register("/go9p/srv/"+srv.Id, srv)

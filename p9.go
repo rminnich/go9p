@@ -303,7 +303,7 @@ func gint64(buf []byte) (uint64, []byte) {
 func gstr(buf []byte) (string, []byte) {
 	var n uint16
 
-	if buf == nil || len(buf) < 2 {
+	if len(buf) < 2 {
 		return "", nil
 	}
 

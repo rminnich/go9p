@@ -75,7 +75,6 @@ func (conn *Conn) recv() {
 			b := make([]byte, conn.Msize*8)
 			copy(b, buf[0:pos])
 			buf = b
-			b = nil
 		}
 
 		n, err = conn.conn.Read(buf[pos:])
@@ -89,7 +88,7 @@ func (conn *Conn) recv() {
 			sz, _ := Gint32(buf)
 			if sz > conn.Msize {
 				log.Println("bad client connection: ", conn.conn.RemoteAddr())
-				conn.conn.Close()
+				_ = conn.conn.Close()
 				conn.close()
 				return
 			}
@@ -98,15 +97,14 @@ func (conn *Conn) recv() {
 					b := make([]byte, conn.Msize*8)
 					copy(b, buf[0:pos])
 					buf = b
-					b = nil
 				}
 
 				break
 			}
-			fc, err, fcsize := Unpack(buf, conn.Dotu)
+			fc, fcsize, err := Unpack(buf, conn.Dotu)
 			if err != nil {
-				log.Println(fmt.Sprintf("invalid packet : %v %v", err, buf))
-				conn.conn.Close()
+				log.Printf("invalid packet : %v %v", err, buf)
+				_ = conn.conn.Close()
 				conn.close()
 				return
 			}
@@ -115,7 +113,6 @@ func (conn *Conn) recv() {
 			req := new(SrvReq)
 			select {
 			case req.Rc = <-conn.rchan:
-				break
 			default:
 				req.Rc = NewFcall(conn.Msize)
 			}
@@ -126,7 +123,7 @@ func (conn *Conn) recv() {
 			if conn.Debuglevel > 0 {
 				conn.logFcall(req.Tc)
 				if conn.Debuglevel&DbgPrintPackets != 0 {
-					log.Println(">->", conn.Id, fmt.Sprint(req.Tc.Pkt))
+					log.Println(">->", conn.Id, fmt.Sprintf("%v", req.Tc.Pkt))
 				}
 
 				if conn.Debuglevel&DbgPrintFcalls != 0 {
@@ -183,7 +180,7 @@ func (conn *Conn) send() {
 			if conn.Debuglevel > 0 {
 				conn.logFcall(req.Rc)
 				if conn.Debuglevel&DbgPrintPackets != 0 {
-					log.Println("<-<", conn.Id, fmt.Sprint(req.Rc.Pkt))
+					log.Println("<-<", conn.Id, fmt.Sprintf("%v", req.Rc.Pkt))
 				}
 
 				if conn.Debuglevel&DbgPrintFcalls != 0 {
@@ -196,7 +193,7 @@ func (conn *Conn) send() {
 				if err != nil {
 					/* just close the socket, will get signal on conn.done */
 					log.Println("error while writing")
-					conn.conn.Close()
+					_ = conn.conn.Close()
 					break
 				}
 
@@ -210,8 +207,6 @@ func (conn *Conn) send() {
 			}
 		}
 	}
-
-	panic("unreached")
 }
 
 func (conn *Conn) RemoteAddr() net.Addr {
@@ -259,5 +254,4 @@ func (srv *Srv) StartListener(l net.Listener) error {
 
 		srv.NewConn(c)
 	}
-	return nil
 }

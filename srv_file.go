@@ -31,7 +31,7 @@ type FWstatOp interface {
 // If the FReadOp interface is implemented, the Read operation will be called
 // to read from the file. If not implemented, "permission denied" error will
 // be send back. The operation returns the number of bytes read, or the
-// error occured while reading.
+// error occurred while reading.
 type FReadOp interface {
 	Read(fid *FFid, buf []byte, offset uint64) (int, error)
 }
@@ -39,7 +39,7 @@ type FReadOp interface {
 // If the FWriteOp interface is implemented, the Write operation will be called
 // to write to the file. If not implemented, "permission denied" error will
 // be send back. The operation returns the number of bytes written, or the
-// error occured while writing.
+// error occurred while writing.
 type FWriteOp interface {
 	Write(fid *FFid, data []byte, offset uint64) (int, error)
 }
@@ -48,7 +48,7 @@ type FWriteOp interface {
 // when the client attempts to create a file in the srvFile implementing the interface.
 // If not implemented, "permission denied" error will be send back. If successful,
 // the operation should call (*File)Add() to add the created file to the directory.
-// The operation returns the created file, or the error occured while creating it.
+// The operation returns the created file, or the error occurred while creating it.
 type FCreateOp interface {
 	Create(fid *FFid, name string, perm uint32) (*srvFile, error)
 }
@@ -56,7 +56,7 @@ type FCreateOp interface {
 // If the FRemoveOp interface is implemented, the Remove operation will be called
 // when the client attempts to create a file in the srvFile implementing the interface.
 // If not implemented, "permission denied" error will be send back.
-// The operation returns nil if successful, or the error that occured while removing
+// The operation returns nil if successful, or the error that occurred while removing
 // the file.
 type FRemoveOp interface {
 	Remove(*FFid) error
@@ -131,8 +131,8 @@ func (f *srvFile) Add(dir *srvFile, name string, uid User, gid Group, mode uint3
 	lock.Unlock()
 
 	f.Qid.Type = uint8(mode >> 24)
-	f.Qid.Version = 0
-	f.Qid.Path = qpath
+	f.Version = 0
+	f.Path = qpath
 	f.Mode = mode
 	f.Atime = uint32(time.Now().Unix())
 	f.Mtime = f.Atime
@@ -271,7 +271,7 @@ func (f *srvFile) CheckPerm(user User, perm uint32) bool {
 
 	/* group permissions */
 	groups := user.Groups()
-	if groups != nil && len(groups) > 0 {
+	if len(groups) > 0 {
 		for i := 0; i < len(groups); i++ {
 			if f.Gid == groups[i].Name() || f.Gidnum == uint32(groups[i].Id()) {
 				fperm |= (f.Mode >> 3) & 7
@@ -409,7 +409,7 @@ func (*Fsrv) Read(req *SrvReq) {
 	f := fid.F
 	tc := req.Tc
 	rc := req.Rc
-	InitRread(rc, tc.Count)
+	_ = InitRread(rc, tc.Count)
 
 	if f.Mode&DMDIR != 0 {
 		// Get all the directory entries and

@@ -31,7 +31,7 @@ func (clnt *Clnt) Walk(fid *Fid, newfid *Fid, wnames []string) ([]Qid, error) {
 // Walks to a named file. Returns a Fid associated with the file,
 // or an Error.
 func (clnt *Clnt) FWalk(path string) (*Fid, error) {
-	var err error = nil
+	var err error
 
 	var i, m int
 	for i = 0; i < len(path); i++ {
@@ -98,6 +98,6 @@ func (clnt *Clnt) FWalk(path string) (*Fid, error) {
 	return newfid, nil
 
 error:
-	clnt.Clunk(newfid)
+	_ = clnt.Clunk(newfid)
 	return nil, err
 }

@@ -1,2 +1,4 @@
 *.orig
 *.rej
+coverage-all.out
+coverage.out
