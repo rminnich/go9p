@@ -324,3 +324,49 @@ func TestUfsWstatRename(t *testing.T) {
 		t.Fatalf("Rename stat error = %v", err)
 	}
 }
+
+func TestUfsCreateOpenClunkFlush(t *testing.T) {
+	root := t.TempDir()
+	ufs, conn := newUfsConn(root)
+
+	createReq := newUfsReq(conn, Tcreate)
+	createReq.Fid.Aux = &ufsFid{path: root}
+	createReq.Tc.Name = "newfile"
+	createReq.Tc.Perm = 0644
+	createReq.Tc.Mode = OREAD
+	ufs.Create(createReq)
+	if createReq.Rc.Type != Rcreate {
+		t.Fatalf("Create type = %d", createReq.Rc.Type)
+	}
+
+	filePath := filepath.Join(root, "newfile")
+	if _, err := os.Stat(filePath); err != nil {
+		t.Fatalf("Create stat error = %v", err)
+	}
+
+	openReq := newUfsReq(conn, Topen)
+	openReq.Fid.Aux = &ufsFid{path: filePath}
+	openReq.Tc.Mode = OREAD
+	ufs.Open(openReq)
+	if openReq.Rc.Type != Ropen {
+		t.Fatalf("Open type = %d", openReq.Rc.Type)
+	}
+
+	clunkReq := newUfsReq(conn, Tclunk)
+	clunkReq.Fid.Aux = &ufsFid{path: filePath}
+	ufs.Clunk(clunkReq)
+	if clunkReq.Rc.Type != Rclunk {
+		t.Fatalf("Clunk type = %d", clunkReq.Rc.Type)
+	}
+
+	flushReq := newUfsReq(conn, Tflush)
+	ufs.Flush(flushReq)
+}
+
+func TestUfsConnLifecycle(t *testing.T) {
+	ufs := &Ufs{}
+	conn := &Conn{Srv: &ufs.Srv}
+	conn.Srv.Debuglevel = 1
+	ufs.ConnOpened(conn)
+	ufs.ConnClosed(conn)
+}
