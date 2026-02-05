@@ -7,5 +7,3 @@ To install:
   go install -a github.com/rminnich/go9p/ufs
 
 ~/go/bin/ufs
-
-

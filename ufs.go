@@ -26,7 +26,6 @@ type ufsFid struct {
 	dirs       []os.FileInfo
 	direntends []int
 	dirents    []byte
-	diroffset  uint64
 	st         os.FileInfo
 }
 
@@ -76,19 +75,15 @@ func omode2uflags(mode uint8) int {
 	switch mode & 3 {
 	case OREAD:
 		ret = os.O_RDONLY
-		break
 
 	case ORDWR:
 		ret = os.O_RDWR
-		break
 
 	case OWRITE:
 		ret = os.O_WRONLY
-		break
 
 	case OEXEC:
 		ret = os.O_RDONLY
-		break
 	}
 
 	if mode&OTRUNC != 0 {
@@ -166,11 +161,11 @@ type ufsDir struct {
 func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) (*Dir, error) {
 	if r := recover(); r != nil {
 		fmt.Print("stat failed: ", r)
-		return nil, &os.PathError{"dir2Dir", path, nil}
+		return nil, &os.PathError{Op: "dir2Dir", Path: path, Err: nil}
 	}
 	sysif := d.Sys()
 	if sysif == nil {
-		return nil, &os.PathError{"dir2Dir: sysif is nil", path, nil}
+		return nil, &os.PathError{Op: "dir2Dir: sysif is nil", Path: path, Err: nil}
 	}
 	sysMode := sysif.(*syscall.Stat_t)
 
@@ -230,15 +225,16 @@ func (dir *ufsDir) dotu(path string, d os.FileInfo, upool Users, sysMode *syscal
 	dir.Uidnum = uint32(u.Id())
 	dir.Gidnum = uint32(g.Id())
 	dir.Muidnum = NOUID
-	if d.Mode()&os.ModeSymlink != 0 {
+	switch {
+	case d.Mode()&os.ModeSymlink != 0:
 		var err error
 		dir.Ext, err = os.Readlink(path)
 		if err != nil {
 			dir.Ext = ""
 		}
-	} else if isBlock(d) {
+	case isBlock(d):
 		dir.Ext = fmt.Sprintf("b %d %d", sysMode.Rdev>>24, sysMode.Rdev&0xFFFFFF)
-	} else if isChar(d) {
+	case isChar(d):
 		dir.Ext = fmt.Sprintf("c %d %d", sysMode.Rdev>>24, sysMode.Rdev&0xFFFFFF)
 	}
 }
@@ -264,7 +260,7 @@ func (*Ufs) FidDestroy(sfid *SrvFid) {
 
 	fid = sfid.Aux.(*ufsFid)
 	if fid.file != nil {
-		fid.file.Close()
+		_ = fid.file.Close()
 	}
 }
 
@@ -361,8 +357,8 @@ func (*Ufs) Create(req *SrvReq) {
 	}
 
 	path := fid.path + "/" + tc.Name
-	var e error = nil
-	var file *os.File = nil
+	var e error
+	var file *os.File
 	switch {
 	case tc.Perm&DMDIR != 0:
 		e = os.Mkdir(path, os.FileMode(tc.Perm&0777))
@@ -371,7 +367,8 @@ func (*Ufs) Create(req *SrvReq) {
 		e = os.Symlink(tc.Ext, path)
 
 	case tc.Perm&DMLINK != 0:
-		n, e := strconv.ParseUint(tc.Ext, 10, 0)
+		var n uint64
+		n, e = strconv.ParseUint(tc.Ext, 10, 0)
 		if e != nil {
 			break
 		}
@@ -391,7 +388,7 @@ func (*Ufs) Create(req *SrvReq) {
 		return
 
 	default:
-		var mode uint32 = tc.Perm & 0777
+		mode := tc.Perm & 0777
 		if req.Conn.Dotu {
 			if tc.Perm&DMSETUID > 0 {
 				mode |= syscall.S_ISUID
@@ -433,7 +430,7 @@ func (*Ufs) Read(req *SrvReq) {
 		return
 	}
 
-	InitRread(rc, tc.Count)
+	_ = InitRread(rc, tc.Count)
 	var count int
 	var e error
 	if fid.st.IsDir() {
@@ -441,7 +438,7 @@ func (*Ufs) Read(req *SrvReq) {
 			var e error
 			// If we got here, it was open. Can't really seek
 			// in most cases, just close and reopen it.
-			fid.file.Close()
+			_ = fid.file.Close()
 			if fid.file, e = os.OpenFile(fid.path, omode2uflags(req.Fid.Omode), 0); e != nil {
 				req.RespondError(toError(e))
 				return
@@ -683,7 +680,7 @@ func (u *Ufs) Wstat(req *SrvReq) {
 			case true:
 				mt = st.ModTime()
 			default:
-				//at = time.Time(0)//atime(st.Sys().(*syscall.Stat_t))
+				// at = time.Time(0)//atime(st.Sys().(*syscall.Stat_t))
 			}
 		}
 		e := os.Chtimes(fid.path, at, mt)

@@ -254,7 +254,7 @@ func TestUfsReadWriteRemove(t *testing.T) {
 		t.Fatalf("OpenFile error = %v", err)
 	}
 	t.Cleanup(func() {
-		file.Close()
+		_ = file.Close()
 	})
 
 	ufs, conn := newUfsConn(root)

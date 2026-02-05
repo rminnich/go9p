@@ -98,24 +98,18 @@ func TestPackRsimpleOps(t *testing.T) {
 		wantType uint8
 	}{
 		{
-			name: "clunk",
-			call: func(fc *Fcall) error {
-				return PackRclunk(fc)
-			},
+			name:     "clunk",
+			call:     PackRclunk,
 			wantType: Rclunk,
 		},
 		{
-			name: "remove",
-			call: func(fc *Fcall) error {
-				return PackRremove(fc)
-			},
+			name:     "remove",
+			call:     PackRremove,
 			wantType: Rremove,
 		},
 		{
-			name: "wstat",
-			call: func(fc *Fcall) error {
-				return PackRwstat(fc)
-			},
+			name:     "wstat",
+			call:     PackRwstat,
 			wantType: Rwstat,
 		},
 	}

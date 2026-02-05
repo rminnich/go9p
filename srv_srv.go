@@ -150,8 +150,6 @@ type Conn struct {
 	rsz     uint64 // total size of the R messages sent
 	npend   int    // number of currently pending messages
 	maxpend int    // maximum number of pending messages
-	nreads  int    // number of reads
-	nwrites int    // number of writes
 }
 
 // The SrvFid type identifies a file on the file server.
@@ -192,7 +190,7 @@ type SrvReq struct {
 	prev, next *SrvReq
 }
 
-// The Start method should be called once the file server implementor
+// The Start method should be called once the file server implementer
 // initializes the Srv struct with the preferred values. It sets default
 // values to the fields that are not initialized and creates the goroutines
 // required for the server's operation. The method receives an empty
@@ -247,7 +245,7 @@ func (req *SrvReq) process() {
 
 	req.Lock()
 	req.status &= ^reqWork
-	if !(req.status&reqResponded != 0) {
+	if req.status&reqResponded == 0 {
 		req.status |= reqSaved
 	}
 	req.Unlock()
@@ -393,7 +391,7 @@ func (req *SrvReq) Respond() {
 		nextreq.next = nil
 		// if there are flush requests, move them to the next request
 		if req.flushreq != nil {
-			var p *SrvReq = nil
+			var p *SrvReq
 			r := nextreq.flushreq
 			for ; r != nil; p, r = r, r.flushreq {
 			}

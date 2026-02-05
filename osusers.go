@@ -69,16 +69,15 @@ func (up *osUsers) Uname2User(uname string) User {
 func (up *osUsers) Gid2Group(gid int) Group {
 	once.Do(initOsusers)
 	OsUsers.Lock()
+	defer OsUsers.Unlock()
 	group, present := OsUsers.groups[gid]
 	if present {
-		OsUsers.Unlock()
 		return group
 	}
 
 	group = new(osGroup)
 	group.gid = gid
 	OsUsers.groups[gid] = group
-	OsUsers.Unlock()
 	return group
 }
 

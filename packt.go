@@ -15,7 +15,7 @@ func PackTversion(fc *Fcall, msize uint32, version string) error {
 	fc.Msize = msize
 	fc.Version = version
 	p = pint32(msize, p)
-	p = pstr(version, p)
+	pstr(version, p)
 
 	return nil
 }
@@ -40,7 +40,7 @@ func PackTauth(fc *Fcall, fid uint32, uname string, aname string, unamenum uint3
 	p = pstr(aname, p)
 	if dotu {
 		fc.Unamenum = unamenum
-		p = pint32(unamenum, p)
+		pint32(unamenum, p)
 	}
 
 	return nil
@@ -54,7 +54,7 @@ func PackTflush(fc *Fcall, oldtag uint16) error {
 	}
 
 	fc.Oldtag = oldtag
-	p = pint16(oldtag, p)
+	pint16(oldtag, p)
 	return nil
 }
 
@@ -82,7 +82,7 @@ func PackTattach(fc *Fcall, fid uint32, afid uint32, uname string, aname string,
 	p = pstr(aname, p)
 	if dotu {
 		fc.Unamenum = unamenum
-		p = pint32(unamenum, p)
+		pint32(unamenum, p)
 	}
 
 	return nil
@@ -126,7 +126,7 @@ func PackTopen(fc *Fcall, fid uint32, mode uint8) error {
 	fc.Fid = fid
 	fc.Mode = mode
 	p = pint32(fid, p)
-	p = pint8(mode, p)
+	pint8(mode, p)
 	return nil
 }
 
@@ -156,7 +156,7 @@ func PackTcreate(fc *Fcall, fid uint32, name string, perm uint32, mode uint8, ex
 
 	if dotu {
 		fc.Ext = ext
-		p = pstr(ext, p)
+		pstr(ext, p)
 	}
 
 	return nil
@@ -175,7 +175,7 @@ func PackTread(fc *Fcall, fid uint32, offset uint64, count uint32) error {
 	fc.Count = count
 	p = pint32(fid, p)
 	p = pint64(offset, p)
-	p = pint32(count, p)
+	pint32(count, p)
 	return nil
 }
 
@@ -207,7 +207,7 @@ func PackTclunk(fc *Fcall, fid uint32) error {
 	}
 
 	fc.Fid = fid
-	p = pint32(fid, p)
+	pint32(fid, p)
 	return nil
 }
 
@@ -219,7 +219,7 @@ func PackTremove(fc *Fcall, fid uint32) error {
 	}
 
 	fc.Fid = fid
-	p = pint32(fid, p)
+	pint32(fid, p)
 	return nil
 }
 
@@ -231,7 +231,7 @@ func PackTstat(fc *Fcall, fid uint32) error {
 	}
 
 	fc.Fid = fid
-	p = pint32(fid, p)
+	pint32(fid, p)
 	return nil
 }
 
@@ -250,6 +250,6 @@ func PackTwstat(fc *Fcall, fid uint32, d *Dir, dotu bool) error {
 	fc.Dir = *d
 	p = pint32(fid, p)
 	p = pint16(uint16(stsz), p)
-	p = pstat(d, p, dotu)
+	pstat(d, p, dotu)
 	return nil
 }

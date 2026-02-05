@@ -9,7 +9,6 @@ package go9p
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path"
@@ -19,8 +18,6 @@ import (
 
 const numDir = 16384
 
-var addr = flag.String("addr", ":5640", "network address")
-var pipefsaddr = flag.String("pipefsaddr", ":5641", "pipefs network address")
 var debug = flag.Int("debug", 0, "print debug messages")
 var root = flag.String("root", "/", "root filesystem")
 
@@ -51,16 +48,20 @@ func TestAttachOpenReaddir(t *testing.T) {
 
 	t.Log("ufs starting\n")
 	// determined by build tags
-	//extraFuncs()
+	// extraFuncs()
+	l, listenErr := net.Listen("tcp", "127.0.0.1:0")
+	if listenErr != nil {
+		t.Fatalf("Can not start listener: %v", listenErr)
+	}
+	defer func() { _ = l.Close() }()
+	srvAddr := l.Addr().String()
 	go func() {
-		if err = ufs.StartNetListener("tcp", *addr); err != nil {
-			t.Fatalf("Can not start listener: %v", err)
-		}
+		_ = ufs.StartListener(l)
 	}()
 	/* this may take a few tries ... */
 	var conn net.Conn
 	for i := 0; i < 16; i++ {
-		if conn, err = net.Dial("tcp", *addr); err != nil {
+		if conn, err = net.Dial("tcp", srvAddr); err != nil {
 			t.Logf("Try go connect, %d'th try, %v", i, err)
 		} else {
 			t.Logf("Got a conn, %v\n", conn)
@@ -73,23 +74,23 @@ func TestAttachOpenReaddir(t *testing.T) {
 
 	root := OsUsers.Uid2User(0)
 
-	dir, err := ioutil.TempDir("", "go9p")
+	dir, err := os.MkdirTemp("", "go9p")
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	// Now create a whole bunch of files to test readdir
 	for i := 0; i < numDir; i++ {
-		f := fmt.Sprintf(path.Join(dir, fmt.Sprintf("%d", i)))
-		if err := ioutil.WriteFile(f, []byte(f), 0600); err != nil {
+		f := path.Join(dir, fmt.Sprintf("%d", i))
+		if err := os.WriteFile(f, []byte(f), 0600); err != nil {
 			t.Fatalf("Create %v: got %v, want nil", f, err)
 		}
 	}
 
 	var clnt *Clnt
 	for i := 0; i < 16; i++ {
-		clnt, err = Mount("tcp", *addr, dir, 8192, root)
+		clnt, err = Mount("tcp", srvAddr, dir, 8192, root)
 	}
 	if err != nil {
 		t.Fatalf("Connect failed: %v\n", err)
@@ -112,7 +113,7 @@ func TestAttachOpenReaddir(t *testing.T) {
 		if b, err = clnt.Read(dirfid, offset, 64*1024); err != nil {
 			t.Fatalf("%v", err)
 		}
-		for b != nil && len(b) > 0 {
+		for len(b) > 0 {
 			if _, b, amt, err = UnpackDir(b, ufs.Dotu); err != nil {
 				break
 			} else {
@@ -130,7 +131,7 @@ func TestAttachOpenReaddir(t *testing.T) {
 	if dirfile, err = clnt.FOpen(".", OREAD); err != nil {
 		t.Fatalf("%v", err)
 	}
-	i, amt, offset = 0, 0, 0
+	i = 0
 	for i < numDir {
 		if d, err := dirfile.Readdir(numDir); err != nil {
 			t.Fatalf("%v", err)
@@ -146,7 +147,7 @@ func TestAttachOpenReaddir(t *testing.T) {
 	// Read 128 bytes at a time. Remember the last successful offset.
 	// if UnpackDir fails, read again from that offset
 	t.Logf("NOW TRY PARTIAL")
-	i, amt, offset = 0, 0, 0
+	offset = 0
 	for {
 		var b []byte
 		var d *Dir
@@ -157,7 +158,7 @@ func TestAttachOpenReaddir(t *testing.T) {
 			break
 		}
 		t.Logf("b %v\n", b)
-		for b != nil && len(b) > 0 {
+		for len(b) > 0 {
 			t.Logf("len(b) %v\n", len(b))
 			if d, b, amt, err = UnpackDir(b, ufs.Dotu); err != nil {
 				// this error is expected ...
@@ -172,7 +173,7 @@ func TestAttachOpenReaddir(t *testing.T) {
 	}
 
 	t.Logf("NOW TRY WAY TOO SMALL")
-	i, amt, offset = 0, 0, 0
+	offset = 0
 	for {
 		var b []byte
 		if b, err = clnt.Read(dirfid, offset, 32); err != nil {
@@ -204,7 +205,7 @@ func TestPipefs(t *testing.T) {
 	pipefs.Start(pipefs)
 
 	t.Logf("pipefs starting\n")
-	d, err := ioutil.TempDir("", "TestPipeFS")
+	d, err := os.MkdirTemp("", "TestPipeFS")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -223,23 +224,26 @@ func TestPipefs(t *testing.T) {
 		}
 	}()
 	// determined by build tags
-	//extraFuncs()
+	// extraFuncs()
+	l, listenErr := net.Listen("tcp", "127.0.0.1:0")
+	if listenErr != nil {
+		t.Fatalf("StartNetListener failed: %v", listenErr)
+	}
+	defer func() { _ = l.Close() }()
+	pipeSrvAddr := l.Addr().String()
 	go func() {
-		err := pipefs.StartNetListener("tcp", *pipefsaddr)
-		if err != nil {
-			t.Fatalf("StartNetListener failed: %v\n", err)
-		}
+		_ = pipefs.StartListener(l)
 	}()
 	root := OsUsers.Uid2User(0)
 
 	var c *Clnt
 	for i := 0; i < 16; i++ {
-		c, err = Mount("tcp", *pipefsaddr, "/", uint32(len(b)), root)
+		c, err = Mount("tcp", pipeSrvAddr, "/", uint32(len(b)), root)
 	}
 	if err != nil {
 		t.Fatalf("Connect failed: %v\n", err)
 	}
-	t.Logf("Connected to %v\n", *c)
+	t.Logf("Connected to %v\n", c)
 	if f, err = c.FOpen(fn, ORDWR); err != nil {
 		t.Fatalf("Open failed: %v\n", err)
 	} else {

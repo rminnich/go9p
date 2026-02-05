@@ -5,21 +5,23 @@
 package go9p
 
 // Clunks a fid. Returns nil if successful.
-func (clnt *Clnt) Clunk(fid *Fid) (err error) {
-	err = nil
+func (clnt *Clnt) Clunk(fid *Fid) error {
 	if fid.walked {
 		tc := clnt.NewFcall()
-		err := PackTclunk(tc, fid.Fid)
-		if err != nil {
+		if err := PackTclunk(tc, fid.Fid); err != nil {
 			return err
 		}
 
-		_, err = clnt.Rpc(tc)
+		if _, err := clnt.Rpc(tc); err != nil {
+			fid.walked = false
+			fid.Fid = NOFID
+			return err
+		}
 	}
 
 	fid.walked = false
 	fid.Fid = NOFID
-	return
+	return nil
 }
 
 // Closes a file. Returns nil if successful.

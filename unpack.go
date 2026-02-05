@@ -10,12 +10,12 @@ import (
 
 // Creates a Fcall value from the on-the-wire representation. If
 // dotu is true, reads 9P2000.u messages. Returns the unpacked message,
-// error and how many bytes from the buffer were used by the message.
-func Unpack(buf []byte, dotu bool) (fc *Fcall, err error, fcsz int) {
+// how many bytes from the buffer were used by the message, and any error.
+func Unpack(buf []byte, dotu bool) (fc *Fcall, fcsz int, err error) {
 	var m uint16
 
 	if len(buf) < 7 {
-		return nil, &Error{"buffer too short", EINVAL}, 0
+		return nil, 0, &Error{"buffer too short", EINVAL}
 	}
 
 	fc = new(Fcall)
@@ -29,17 +29,16 @@ func Unpack(buf []byte, dotu bool) (fc *Fcall, err error, fcsz int) {
 	fc.Tag, p = gint16(p)
 
 	if int(fc.Size) > len(buf) || fc.Size < 7 {
-		return nil, &Error{fmt.Sprintf("buffer too short: %d expected %d",
-				len(buf), fc.Size),
-				EINVAL},
-			0
+		return nil, 0, &Error{fmt.Sprintf("buffer too short: %d expected %d",
+			len(buf), fc.Size),
+			EINVAL}
 	}
 
 	p = p[0 : fc.Size-7]
 	fc.Pkt = buf[0:fc.Size]
 	fcsz = int(fc.Size)
 	if fc.Type < Tversion || fc.Type >= Tlast {
-		return nil, &Error{"invalid id", EINVAL}, 0
+		return nil, 0, &Error{"invalid id", EINVAL}
 	}
 
 	var sz uint32
@@ -56,7 +55,7 @@ func Unpack(buf []byte, dotu bool) (fc *Fcall, err error, fcsz int) {
 	err = nil
 	switch fc.Type {
 	default:
-		return nil, &Error{"invalid message id", EINVAL}, 0
+		return nil, 0, &Error{"invalid message id", EINVAL}
 
 	case Tversion, Rversion:
 		fc.Msize, p = gint32(p)
@@ -200,15 +199,15 @@ func Unpack(buf []byte, dotu bool) (fc *Fcall, err error, fcsz int) {
 		fc.Fid, p = gint32(p)
 
 	case Rstat:
-		m, p = gint16(p)
+		_, p = gint16(p)
 		p, err = gstat(p, &fc.Dir, dotu)
 		if err != nil {
-			return nil, err, 0
+			return nil, 0, err
 		}
 
 	case Twstat:
 		fc.Fid, p = gint32(p)
-		m, p = gint16(p)
+		_, p = gint16(p)
 		p, _ = gstat(p, &fc.Dir, dotu)
 
 	case Rflush, Rclunk, Rremove, Rwstat:
@@ -221,5 +220,5 @@ func Unpack(buf []byte, dotu bool) (fc *Fcall, err error, fcsz int) {
 	return
 
 szerror:
-	return nil, &Error{"invalid size", EINVAL}, 0
+	return nil, 0, &Error{"invalid size", EINVAL}
 }

@@ -17,7 +17,7 @@ func PackRversion(fc *Fcall, msize uint32, version string) error {
 	fc.Msize = msize
 	fc.Version = version
 	p = pint32(msize, p)
-	p = pstr(version, p)
+	pstr(version, p)
 
 	return nil
 }
@@ -31,7 +31,7 @@ func PackRauth(fc *Fcall, aqid *Qid) error {
 	}
 
 	fc.Qid = *aqid
-	p = pqid(aqid, p)
+	pqid(aqid, p)
 	return nil
 }
 
@@ -61,7 +61,7 @@ func PackRerror(fc *Fcall, error string, errornum uint32, dotu bool) error {
 	p = pstr(error, p)
 	if dotu {
 		fc.Errornum = errornum
-		p = pint32(errornum, p)
+		pint32(errornum, p)
 	}
 
 	return nil
@@ -83,7 +83,7 @@ func PackRattach(fc *Fcall, aqid *Qid) error {
 	}
 
 	fc.Qid = *aqid
-	p = pqid(aqid, p)
+	pqid(aqid, p)
 	return nil
 }
 
@@ -117,7 +117,7 @@ func PackRopen(fc *Fcall, qid *Qid, iounit uint32) error {
 	fc.Qid = *qid
 	fc.Iounit = iounit
 	p = pqid(qid, p)
-	p = pint32(iounit, p)
+	pint32(iounit, p)
 	return nil
 }
 
@@ -132,7 +132,7 @@ func PackRcreate(fc *Fcall, qid *Qid, iounit uint32) error {
 	fc.Qid = *qid
 	fc.Iounit = iounit
 	p = pqid(qid, p)
-	p = pint32(iounit, p)
+	pint32(iounit, p)
 	return nil
 }
 
@@ -149,7 +149,7 @@ func InitRread(fc *Fcall, count uint32) error {
 
 	fc.Count = count
 	fc.Data = p[4 : fc.Count+4]
-	p = pint32(count, p)
+	pint32(count, p)
 	return nil
 }
 
@@ -188,7 +188,7 @@ func PackRwrite(fc *Fcall, count uint32) error {
 
 	fc.Count = count
 
-	p = pint32(count, p)
+	pint32(count, p)
 	return nil
 }
 
@@ -217,7 +217,7 @@ func PackRstat(fc *Fcall, d *Dir, dotu bool) error {
 	}
 
 	p = pint16(uint16(stsz), p)
-	p = pstat(d, p, dotu)
+	pstat(d, p, dotu)
 	fc.Dir = *d
 	return nil
 }

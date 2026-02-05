@@ -73,7 +73,7 @@ func (clnt *Clnt) FCreate(path string, perm uint32, mode uint8) (*File, error) {
 
 	err = clnt.Create(fid, path[n:], perm, mode, "")
 	if err != nil {
-		clnt.Clunk(fid)
+		_ = clnt.Clunk(fid)
 		return nil, err
 	}
 
@@ -89,7 +89,7 @@ func (clnt *Clnt) FOpen(path string, mode uint8) (*File, error) {
 
 	err = clnt.Open(fid, mode)
 	if err != nil {
-		clnt.Clunk(fid)
+		_ = clnt.Clunk(fid)
 		return nil, err
 	}
 

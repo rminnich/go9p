@@ -88,6 +88,6 @@ func MountConn(c net.Conn, aname string, msize uint32, user User) (*Clnt, error)
 func (clnt *Clnt) Unmount() {
 	clnt.Lock()
 	clnt.err = &Error{"connection closed", EIO}
-	clnt.conn.Close()
+	_ = clnt.conn.Close()
 	clnt.Unlock()
 }

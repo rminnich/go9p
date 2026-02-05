@@ -28,7 +28,7 @@ func (clnt *Clnt) FStat(path string) (*Dir, error) {
 	}
 
 	d, err := clnt.Stat(fid)
-	clnt.Clunk(fid)
+	_ = clnt.Clunk(fid)
 	return d, err
 }
 
